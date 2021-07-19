@@ -18,8 +18,45 @@ package de.kp.works.gdelt
  * 
  */
 
-class GeoApi extends BaseApi {
+class GeoApi extends BaseApi with GeoJson {
   /**
    * https://blog.gdeltproject.org/gdelt-geo-2-0-api-debuts/
    */
+  private val base = "https://api.gdeltproject.org/api/v2/geo/geo"
+  
+  def mentionsByDomain(domain:String):Seq[Mention] = {
+        
+    val endpoint = s"${base}?query=domain:${domain}&format=GeoJSON"
+    val geojson = getJson(endpoint).getAsJsonObject
+    
+    geoJsonToMentions(geojson)
+    
+  }
+  
+  def mentionsByTerm(term:String):Seq[Mention] = {
+        
+    val endpoint = s"${base}?query=${term}&format=GeoJSON"
+    val geojson = getJson(endpoint).getAsJsonObject
+    
+    geoJsonToMentions(geojson)
+    
+  }
+  
+  /*
+   * Point-level map of all locations mentioned near `query. 
+   * This is the most basic kind of map you can make and simply 
+   * tallies up the locations mentioned most frequently over 
+   * the last 24 hours in close proximity to the `query`. 
+   */
+  def getMentionsHtml(term:String):Seq[Mention] = {
+        
+    val endpoint = s"${base}?query=${term}"
+
+    val html = org.jsoup.Jsoup.connect(endpoint).get
+    val geojson = extractGeoJson(html)
+    
+    geoJsonToMentions(geojson)
+    
+  }
+  
 }
