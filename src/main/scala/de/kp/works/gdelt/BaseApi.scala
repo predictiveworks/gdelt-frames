@@ -17,9 +17,61 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
+import java.net.URLEncoder
+
+import org.apache.spark.sql._
+import org.apache.spark.sql.types._
 
 import de.kp.works.http.HttpConnect
+import de.kp.works.spark.Session
 
-trait BaseApi extends HttpConnect {
+trait BaseApi[T] extends HttpConnect {
   
+  protected val session = Session.getSession
+  protected val sc = session.sparkContext
+  
+  protected var folder:String = ""    
+  protected var partitions:Int = sc.defaultMinPartitions
+
+  protected def setFolder(value:String):T = {
+    folder = value
+    this.asInstanceOf[T]
+  }
+
+  protected def setPartitions(value:Int):T = {
+    partitions = value
+    this.asInstanceOf[T]
+  }
+  
+  protected def encodeText(text:String):String = {
+    URLEncoder.encode(text, "UTF-8")    
+  }
+
+  protected def csvToDataFrame(endpoint:String):DataFrame = {
+    
+    val bytes = get(endpoint)    
+
+    val lines = extractCsvBody(bytes)    
+    val rows = lines.map(line => Row(line.replace(",", ";")))
+    
+    val rdd = sc.parallelize(rows, partitions)
+    
+    val schema = StructType(Array(StructField("line", StringType, true)))
+    val tempframe = session.createDataFrame(rdd, schema)
+
+    val uuid = java.util.UUID.randomUUID.toString
+    
+    val tempfile = s"${folder}/${uuid}.csv"
+    tempframe.write.mode(SaveMode.Overwrite).csv(tempfile)
+      
+    val dataframe = session.read
+      .format("com.databricks.spark.csv")
+      .option("header", "false")
+      .option("delimiter", ";")
+      .option("quote", " ")
+      .csv(tempfile)
+     
+    dataframe
+    
+  }
 }

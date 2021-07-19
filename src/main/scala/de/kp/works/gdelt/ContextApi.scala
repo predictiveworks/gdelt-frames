@@ -18,7 +18,7 @@ package de.kp.works.gdelt
  * 
  */
 
-class ContextApi extends BaseApi {
+class ContextApi extends BaseApi[ContextApi] {
   /**
    * https://blog.gdeltproject.org/announcing-the-gdelt-context-2-0-api/
    */

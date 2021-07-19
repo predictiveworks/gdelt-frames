@@ -18,7 +18,7 @@ package de.kp.works.gdelt
  * 
  */
 
-class TvApi extends BaseApi {
+class TvApi extends BaseApi[TvApi] {
   /**
    * https://blog.gdeltproject.org/gdelt-2-0-television-api-debuts/
    */

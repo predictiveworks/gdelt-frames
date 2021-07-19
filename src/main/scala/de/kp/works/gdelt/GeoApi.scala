@@ -18,7 +18,7 @@ package de.kp.works.gdelt
  * 
  */
 
-class GeoApi extends BaseApi with GeoJson {
+class GeoApi extends BaseApi[GeoApi] with GeoJson {
   /**
    * https://blog.gdeltproject.org/gdelt-geo-2-0-api-debuts/
    */
