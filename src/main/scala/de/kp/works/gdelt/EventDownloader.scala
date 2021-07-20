@@ -31,7 +31,7 @@ import de.kp.works.spark.Session
 /**
  * The base downloader of GDELT event files
  */
-class Downloader {
+class EventDownloader {
   
   private val base = "http://data.gdeltproject.org/events"
   private val verbose = true
@@ -128,17 +128,17 @@ class Downloader {
     
   )
 
-  def setDate(value:String):Downloader = {
+  def setDate(value:String):EventDownloader = {
     date = value
     this
   }
 
-  def setPartitions(value:Int):Downloader = {
+  def setPartitions(value:Int):EventDownloader = {
     partitions = value
     this
   }
 
-  def setRepository(value:String):Downloader = {
+  def setRepository(value:String):EventDownloader = {
     path = value
     this
   }
