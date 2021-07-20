@@ -69,11 +69,35 @@ class FileDownloader {
 
     /*
      * STEP #3: The files are restricted to a certain year
+     * and a semantic category is added to ease the download
+     * of files that refer to events, mentions or GDELT's 
+     * knowledge graph
      */
+    val category_udf = udf((url:String) => {
+      
+      if (url.endsWith(".CSV.zip") || url.endsWith(".csv.zip")) {
+
+        if (url.contains(".gkg")) 
+          "graph"
+
+        else if (url.contains(".mentions"))
+          "mention"
+        
+        else 
+          "event"
+            
+      } else "unknown"
+      
+    })  
+
     masterfiles
       .where(col("url").like(s"%/${year}%"))
       .select("size", "url")
-      .write.mode(SaveMode.Overwrite).parquet(s"${repository}/masterfiles.parquet")
+      .withColumn("category", category_udf(col("url")))
+      .filter(not(col("category") === "unknown"))
+      .write
+      .mode(SaveMode.Overwrite)
+      .parquet(s"${repository}/masterfiles.parquet")
     
   }
   
