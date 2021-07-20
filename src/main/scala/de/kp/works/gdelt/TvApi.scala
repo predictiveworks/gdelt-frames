@@ -17,9 +17,22 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
+import org.apache.spark.sql._
 
 class TvApi extends BaseApi[TvApi] {
   /**
    * https://blog.gdeltproject.org/gdelt-2-0-television-api-debuts/
    */
+  private val base = "URL: https://api.gdeltproject.org/api/v2/tv/tv"
+  
+  private def request(query:String, params:Map[String,String]):DataFrame = {
+    
+    val encoded = encodeText(query)
+    val urlPart = paramsToUrl(params)
+    
+    val endpoint = s"${base}?query=${encoded}${urlPart}"
+    csvToDataFrame(endpoint)
+
+  }
+  
 }

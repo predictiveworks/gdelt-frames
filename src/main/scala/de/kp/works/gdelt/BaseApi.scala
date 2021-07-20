@@ -47,6 +47,37 @@ trait BaseApi[T] extends HttpConnect {
     URLEncoder.encode(text, "UTF-8")    
   }
 
+  protected def paramsToUrl(params:Map[String,String]):String = {
+    params.map{case(k, v) => s"&${k}=${v}"}.mkString
+  }
+  /*
+   * TIMESPAN. By default the DOC API searches the last 3 months of coverage monitored by GDELT. 
+   * You can narrow this range by using this option to specify the number of months, weeks, days, 
+   * hours or minutes (minimum of 15 minutes). 
+   * 
+   * The API then only searches documents published within the specified timespan backwards from 
+   * the present time.
+   */  
+  protected def getTimespan(timespan:Int, timerange:String):String = {
+    
+    if (timespan < 0)
+      throw new Exception(s"The timespan provided is not supported")
+
+    if (timerange == "minute" && timespan < 15)
+      throw new Exception("The combination of time span and range is not supported.")
+    
+    timerange match {
+      case "minute" => s"${timespan}min"
+      case "hour"   => s"${timespan}h"
+      case "day"    => s"${timespan}d"
+      case "week"   => s"${timespan}w"
+      case "month"  => s"${timespan}m"
+      case _ =>
+        throw new Exception("The time range provided is not supported.")
+    }
+ 
+  }
+
   protected def csvToDataFrame(endpoint:String):DataFrame = {
     
     val bytes = get(endpoint)    

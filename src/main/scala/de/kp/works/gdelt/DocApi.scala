@@ -19,11 +19,12 @@ package de.kp.works.gdelt
  */
 import java.net.URLEncoder
 
-import com.google.gson._
+import org.apache.spark.sql._
+import scala.collection.mutable
+
 /**
  * The [[DocApi]] is restricted to the `csv `format
  */
-
 class DocApi extends BaseApi[DocApi] {
   /**
    * https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/
@@ -105,7 +106,7 @@ class DocApi extends BaseApi[DocApi] {
      * include the embedded date warning), but does so using a "high design" visual layout suitable 
      * for creating magazine-style collages of matching coverage.
      */
-    "imagefallery",
+    "imagegallery",
     /*
      * Instead of returning VGKG-processed images, this mode returns a list of the social sharing images 
      * found in the matching news articles. Social sharing images are those specified by an article to be 
@@ -217,5 +218,109 @@ class DocApi extends BaseApi[DocApi] {
      */
     "wordcloudimagewebtags"
   )
- 
+  /*
+   * This option is only available in the various Timeline modes and performs moving window smoothing over the 
+   * specified number of time steps, up to a maximum of 30. Due to GDELT's high temporal resolution, timeline 
+   * displays can sometimes capture too much of the chaotic noisy information environment that is the global 
+   * news landscape, resulting in jagged displays. Use this option to enable moving average smoothing up to 30 days.  
+   * 
+   * Note that since this is a moving window average, peaks will be shifted to the right, up to several days or 
+   * weeks at the heaviest smoothing levels.
+   */
+
+  /**
+   * UNUSED QUERY PARAMETERS
+   * 
+   * - TRANS
+   * 
+   * Only available in ArticleList mode with HTML output, this embeds a machine translation widget in the results 
+   * page to seamlessly machine translate all of the article titles into your requested language. As this API is
+   * restricted to CSV output, there is no match.
+   * 
+   * - SORT
+   * 
+   * Default is a sorting by relevance and for the purpose of this API, this is completely sufficient.
+   * 
+   * - TIMEZOOM
+   * 
+   * This parameter is restriced to the Html format and this API is limited to CSV outputs. Therefore,
+   * there is match for this parameter.
+   */
+  
+  /*
+   * - MAXRECORDS
+   * 
+   * In article list mode, the API only returns up 75 results by default,
+   * but this can be increased up to 250 results if desired by using this 
+   * URL parameter.
+   */
+  def article(query:String, mode:String, maxRecords:Int = 75, timespan:Int=3, timerange:String="month"):DataFrame = {
+    
+    if (mode.toLowerCase.startsWith("art") == false)
+      throw new Exception("The mode provided does not refer to article queries.")
+    
+    val params = mutable.HashMap.empty[String,String]
+    
+    params += "mode" -> mode
+    params += "timespan" -> getTimespan(timespan, timerange)
+    
+    request(query, params.toMap)
+
+  }
+  
+  def image(query:String, mode:String, timespan:Int=3, timerange:String="month"):DataFrame = {
+    
+    if (mode.toLowerCase.startsWith("image") == false)
+      throw new Exception("The mode provided does not refer to image queries.")
+    
+    val params = mutable.HashMap.empty[String,String]
+    
+    params += "mode" -> mode
+    params += "timespan" -> getTimespan(timespan, timerange)
+    
+    request(query, params.toMap)
+      
+  }
+  
+  def timeline(query:String, mode:String, smoothing:Int = -1, timespan:Int=3, timerange:String="month"):DataFrame = {
+    
+    if (mode.toLowerCase.startsWith("timeline") == false)
+      throw new Exception("The mode provided does not refer to timeline queries.")
+    
+    if (smoothing > 30)
+      throw new Exception("GDELT does not support smoothing beyond 30 time steps.")
+    
+    val params = mutable.HashMap.empty[String,String]
+    
+    params += "mode" -> mode
+    params += "timespan" -> getTimespan(timespan, timerange)
+    
+    if (smoothing != -1)
+      params += "timelinesmooth" -> smoothing.toString
+    
+    request(query, params.toMap)
+      
+  }
+  
+  def tonecart(query:String, timespan:Int=3, timerange:String="month"):DataFrame = {
+    
+    val params = mutable.HashMap.empty[String,String]
+    
+    params += "mode" -> "tonechart"
+    params += "timespan" -> getTimespan(timespan, timerange)
+    
+    request(query, params.toMap)
+    
+  }
+  
+  private def request(query:String, params:Map[String,String]):DataFrame = {
+    
+    val encoded = encodeText(query)
+    val urlPart = paramsToUrl(params)
+    
+    val endpoint = s"${base}?query=${encoded}${urlPart}"
+    csvToDataFrame(endpoint)
+
+  }
+  
 }
