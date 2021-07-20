@@ -27,6 +27,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 
+import de.kp.works.gdelt.functions._
 import de.kp.works.spark.Session
 /**
  * The base downloader of GDELT event files
@@ -210,13 +211,8 @@ class EventDownloader {
       /*
        * STEP #4: Semantic enrichment
        */
-      input = input
-        .withColumn("QuadClass",       Enricher.quad_class_udf(col("QuadClass")))
-        .withColumn("Actor1_Geo_Type", Enricher.geo_type_udf(col("Actor1_Geo_Type")))
-        .withColumn("Actor2_Geo_Type", Enricher.geo_type_udf(col("Actor2_Geo_Type")))
-        .withColumn("Action_Geo_Type", Enricher.geo_type_udf(col("Action_Geo_Type")))
-        
-      input
+      val enricher = new Enricher()
+      enricher.transform(input)
 
     } catch {
       case t:Throwable => t.printStackTrace();session.emptyDataFrame

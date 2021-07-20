@@ -17,35 +17,49 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
-import org.apache.spark.sql.functions.udf
+import org.apache.spark.sql._
 
-object Enricher extends Serializable {
+import org.apache.spark.sql.functions._
+import de.kp.works.gdelt.functions._
+
+class Enricher {
+
+  private val eventCodes  = GDELTModel.eventCodes
+  private val ethnicCodes = GDELTModel.ethnicCodes
   
-  def geo_type_udf = 
-    udf((geoType:String) => {
-      
-      val code = geoType.trim.toInt
-      code match {
-        case 1 => "COUNTRY"
-        case 2 => "USSTATE"
-        case 3 => "USCITY"
-        case 4 => "WORLDCITY"
-        case 5 => "WORLDSTATE"
-        case _ => "UNKNOWN"
-      }        
-    })
-
-  def quad_class_udf = 
-    udf((quadClass:String) => {
+  def transform(dataset:DataFrame):DataFrame = {
+    /*
+     * Event enrichment: all event codes are enriched
+     * with its associated description and the result
+     * is packed into common data structure  
+     */
+    val eventCols = List("EventCode", "EventBaseCode", "EventRootCode").map(col)
+    val eventStruct = struct(eventCols: _*)
     
-      val code = quadClass.trim.toInt
-      code match {
-        case 1 => "VERBAL_COOPERATION"
-        case 2 => "MATERIAL_COOPERATION"
-        case 3 => "VERBAL_CONFLICT"
-        case 4 => "MATERIAL_CONFLICT"
-        case _ => "UNKNOWN"
-      }    
-    })
-  
+    val dropCols = List("EventCode", "EventBaseCode", "EventRootCode")
+    
+    val enriched = dataset
+    
+      /** ETHNIC CODE **/
+      .withColumn("Actor1_EthnicCode", ethnic_code_udf(ethnicCodes)(col("Actor1_EthnicCode")))
+      .withColumn("Actor2_EthnicCode", ethnic_code_udf(ethnicCodes)(col("Actor2_EthnicCode")))
+    
+      /** EVENT CODE **/
+      .withColumn("Event", event_code_udf(eventCodes)(eventStruct))
+      
+      /** QUAD CLASS **/
+      .withColumn("QuadClass",  quad_class_udf(col("QuadClass")))
+      
+      /** GEO TYPE **/
+      .withColumn("Actor1_Geo_Type", geo_type_udf(col("Actor1_Geo_Type")))
+      .withColumn("Actor2_Geo_Type", geo_type_udf(col("Actor2_Geo_Type")))
+      .withColumn("Action_Geo_Type", geo_type_udf(col("Action_Geo_Type")))
+        
+      /** DROP **/
+      
+      .drop(dropCols: _*)
+      
+    enriched
+    
+  }
 }
