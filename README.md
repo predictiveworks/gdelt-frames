@@ -1,6 +1,8 @@
 # GDELT Frames
 
-<img src="https://github.com/predictiveworks/gdelt-frames/blob/main/images/gdelt-frames-2021-07-20.png" width="600" alt="GDELT-Frames">
+<p align="center">
+  <img src="https://github.com/predictiveworks/gdelt-frames/blob/main/images/gdelt-frames-2021-07-20.png" width="600" alt="GDELT-Frames">
+</p>
 
 GDELTFrames provides a DataFrame-centric view over the Global Database of Events Language and Tone and prepares data 
 for Apache Spark based machine learning and deep learning.
