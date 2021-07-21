@@ -31,14 +31,14 @@ trait BaseApi[T] extends HttpConnect {
   protected val sc = session.sparkContext
   
   protected var folder:String = ""    
-  protected var partitions:Int = sc.defaultMinPartitions
+  protected var partitions:Int = 1
 
-  protected def setFolder(value:String):T = {
+  def setFolder(value:String):T = {
     folder = value
     this.asInstanceOf[T]
   }
 
-  protected def setPartitions(value:Int):T = {
+  def setPartitions(value:Int):T = {
     partitions = value
     this.asInstanceOf[T]
   }
@@ -78,12 +78,12 @@ trait BaseApi[T] extends HttpConnect {
  
   }
 
-  protected def csvToDataFrame(endpoint:String):DataFrame = {
+  protected def csvToDataFrame(endpoint:String, header:String = "true"):DataFrame = {
     
     val bytes = get(endpoint)    
 
     val lines = extractCsvBody(bytes)    
-    val rows = lines.map(line => Row(line.replace(",", ";")))
+    val rows = lines.map(line => Row(line.replace(",", ";").replace("\"","")))
     
     val rdd = sc.parallelize(rows, partitions)
     
@@ -97,7 +97,7 @@ trait BaseApi[T] extends HttpConnect {
       
     val dataframe = session.read
       .format("com.databricks.spark.csv")
-      .option("header", "false")
+      .option("header", header)
       .option("delimiter", ";")
       .option("quote", " ")
       .csv(tempfile)

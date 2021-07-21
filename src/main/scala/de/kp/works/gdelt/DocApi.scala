@@ -29,7 +29,7 @@ class DocApi extends BaseApi[DocApi] {
   /**
    * https://blog.gdeltproject.org/gdelt-doc-2-0-api-debuts/
    */
-  private val base = "URL: https://api.gdeltproject.org/api/v2/doc/doc"
+  private val base = "https://api.gdeltproject.org/api/v2/doc/doc"
   /*
    * `mode` specifies the specific output you would like from the API, 
    * ranging from timelines to word clouds to article lists.
@@ -318,7 +318,7 @@ class DocApi extends BaseApi[DocApi] {
     val encoded = encodeText(query)
     val urlPart = paramsToUrl(params)
     
-    val endpoint = s"${base}?query=${encoded}${urlPart}"
+    val endpoint = s"${base}?query=${encoded}${urlPart}&format=csv"
     csvToDataFrame(endpoint)
 
   }

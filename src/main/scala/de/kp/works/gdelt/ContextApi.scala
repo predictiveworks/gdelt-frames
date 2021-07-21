@@ -33,7 +33,7 @@ class ContextApi extends BaseApi[ContextApi] {
    * but this can be increased up to 250 results if desired by using this 
    * URL parameter.
    */
-  def article(query:String, mode:String="artlist", maxRecords:Int = 75, timespan:Int=3, timerange:String="month"):DataFrame = {
+  def article(query:String, mode:String="artlist", maxRecords:Int = 75, timespan:Int=24, timerange:String="hour"):DataFrame = {
     /*
      * ArtList. There is only one mode at this time and you must specify "artlist"
      */
@@ -43,6 +43,8 @@ class ContextApi extends BaseApi[ContextApi] {
     val params = mutable.HashMap.empty[String,String]
     
     params += "mode" -> mode
+    params += "maxrecords" -> maxRecords.toString
+    
     params += "timespan" -> getTimespan(timespan, timerange)
     
     request(query, params.toMap)
@@ -54,7 +56,7 @@ class ContextApi extends BaseApi[ContextApi] {
     val encoded = encodeText(query)
     val urlPart = paramsToUrl(params)
     
-    val endpoint = s"${base}?query=${encoded}${urlPart}"
+    val endpoint = s"${base}?query=${encoded}${urlPart}&format=csv"
     csvToDataFrame(endpoint)
 
   }

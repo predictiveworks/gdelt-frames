@@ -106,6 +106,17 @@ package object functions extends Serializable {
   def religion_code_udf(religionCodes:Map[String,String]) = 
     udf((religionCode:String) => codeToValue(religionCode, religionCodes))
     
+  def themes_udf = udf((themes:String) => {
+  
+    if (themes == null) Seq("*")
+    else {
+      themes.split(";")
+        .filter(theme => theme.nonEmpty && theme != null)
+        .toSeq
+      
+    }
+  })
+
   def type_code_udf(typeCodes:Map[String,String]) = 
     udf((typeCode:String) => codeToValue(typeCode, typeCodes))
 
