@@ -17,33 +17,22 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
-import java.io.{BufferedReader, InputStreamReader}
-import java.util.zip.ZipInputStream
 
 import org.apache.spark.SparkFiles
-import org.apache.spark.input.PortableDataStream
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types._
+
 
 import de.kp.works.gdelt.functions._
-import de.kp.works.spark.Session
+
 /**
  * The base downloader of GDELT event files
  */
-class EventDownloader {
+class EventDownloader extends BaseDownloader[EventDownloader] {
   
   private val base = "http://data.gdeltproject.org/events"
-  private val verbose = true
-  
-  private val session = Session.getSession
-  private val sc = session.sparkContext
-  
-  private var date:String = ""
   private var path:String = ""
-  
-  private var partitions:Int = sc.defaultMinPartitions
   /*
    * http://data.gdeltproject.org/documentation/GDELT-Event_Codebook-V2.0.pdf
    */
@@ -129,16 +118,6 @@ class EventDownloader {
     
   )
 
-  def setDate(value:String):EventDownloader = {
-    date = value
-    this
-  }
-
-  def setPartitions(value:Int):EventDownloader = {
-    partitions = value
-    this
-  }
-
   def setRepository(value:String):EventDownloader = {
     path = value
     this
@@ -163,35 +142,11 @@ class EventDownloader {
       catch {
         case t:Throwable => if (verbose) println(s"The file `${fname}` already exists")
       }
-      
+      /*
+       * STEP #2: Transform event file(s) into a dataframe
+       */
       val file = SparkFiles.get(fname)
-      /*
-       * STEP #2: Read a certain daily file as RDD[String]
-       */
-      val rdd = sc.binaryFiles(file, partitions)
-        .flatMap{ case(name:String, content:PortableDataStream) => {
-          
-          val zis = new ZipInputStream(content.open)
-          Stream.continually(zis.getNextEntry)
-            .takeWhile {
-                case null => zis.close(); false
-                case _ => true
-            }
-            .flatMap { _ =>
-              val br = new BufferedReader(new InputStreamReader(zis))
-              Stream.continually(br.readLine()).takeWhile(_ != null)
-            }          
-        }}
-        .map(line => {          
-          val text = line.replace("\r", "").replace("\t", ";")
-          Row(text)
-        })
-      /*
-       * STEP #3: Transform the daily event file into a
-       * dataframe and persist in local repository
-       */
-      val schema = StructType(Array(StructField("line", StringType, true)))
-      val dataframe = session.createDataFrame(rdd, schema)
+      val dataframe = filesToDF(file)
 
       val outfile = s"${path}/${date}.export.csv"
       dataframe.write.mode(SaveMode.Overwrite).csv(outfile)
@@ -212,7 +167,7 @@ class EventDownloader {
       input = input.withColumn("EventId", event_id_udf(col("EventId")))
       
       /*
-       * STEP #4: Semantic enrichment
+       * STEP #3: Semantic enrichment
        */
       val enricher = new Enricher()
       enricher.transform(input)

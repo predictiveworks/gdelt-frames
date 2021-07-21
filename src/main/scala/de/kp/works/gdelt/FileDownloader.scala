@@ -27,11 +27,9 @@ import org.apache.spark.sql.functions._
 
 import de.kp.works.spark.Session
 
-class FileDownloader {
+class FileDownloader extends BaseDownloader[FileDownloader] {
   
   private val uri = "http://data.gdeltproject.org/gdeltv2/masterfilelist.txt"
-  
-  private val session = Session.getSession
 
   private val timeout = 5000
   private var repository:String = ""
@@ -41,7 +39,52 @@ class FileDownloader {
     this
   }
   
-  def prepareMasterFiles(year:String):Unit = {
+  def downloadFiles:Unit = {
+    
+    val startts = System.currentTimeMillis
+    
+    val masterfiles = session.read.parquet(s"${repository}/masterfiles.parquet")
+    
+    val ts0 = System.currentTimeMillis
+    if (verbose) println("Masterfiles loaded in ${ts0 - startts} ms.")
+    /*
+     * STEP #1: Download event files from masterfiles
+     */
+    download(masterfiles, "event")
+
+    val ts1 = System.currentTimeMillis
+    if (verbose) println("Event files downloaded in ${ts1 - ts0} ms.")
+    /*
+     * STEP #2: Download graph files from masterfiles
+     */
+    download(masterfiles, "graph")
+
+    val ts2 = System.currentTimeMillis
+    if (verbose) println("Graph files downloaded in ${ts2 - ts1} ms.")
+    /*
+     * STEP #2: Download mention files from masterfiles
+     */
+    download(masterfiles, "mention")
+
+    val ts3 = System.currentTimeMillis
+    if (verbose) println("Mention files downloaded in ${ts3 - ts2} ms.")
+
+  }
+  
+  private def download(masterfiles:DataFrame, category:String):Unit = {
+    
+    val files = masterfiles.filter(col("category") === category)
+    files.select("url").repartition(100).foreach(row => {
+      
+       val endpoint = row.getAs[String](0)
+       val fileName = s"${repository}/${category}/${row.getAs[String](0).split("/").last}"
+       
+       downloadFile(endpoint, fileName)
+       
+    })
+  }
+  
+  def prepareFiles(year:String):Unit = {
     /*
      * STEP #1: Download the masterfile list from GDELT
      * and restrict its content to the provided year,
@@ -107,8 +150,13 @@ class FileDownloader {
       throw new Exception("No repository provided.")
     
     val fileName = s"${repository}/masterfiles.csv"
+    downloadFile(uri, fileName)
     
-    val url = new URL(uri)
+  }
+
+  private def downloadFile(endpoint:String, fileName:String):Unit = {
+    
+    val url = new URL(endpoint)
     val conn = url.openConnection().asInstanceOf[HttpURLConnection]
     /*
      * Set connection parameters
@@ -125,5 +173,4 @@ class FileDownloader {
         url #> new File(fileName) !!
     
   }
-
 }
