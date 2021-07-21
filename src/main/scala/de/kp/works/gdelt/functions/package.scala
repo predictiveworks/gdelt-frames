@@ -48,6 +48,9 @@ package object functions extends Serializable {
       
     })
     
+  def event_id_udf = 
+    udf((eventId:String) => eventId.replace("\"","").toInt)
+    
   def ethnic_code_udf(ethnicCodes:Map[String,String]) = 
     udf((ethnicCode:String) => {
   
@@ -84,6 +87,17 @@ package object functions extends Serializable {
         case 4 => "MATERIAL_CONFLICT"
         case _ => "UNKNOWN"
       }    
+    })
+    
+  def religion_code_udf(religionCodes:Map[String,String]) = 
+    udf((religionCode:String) => {
+  
+      if (religionCode == null)
+        "unknown"
+        
+      else
+        religionCodes.getOrElse(religionCode, "unknown")
+        
     })
 
   def scrapeContent(iterator: Iterator[String], goose: Goose): Iterator[Content] = {

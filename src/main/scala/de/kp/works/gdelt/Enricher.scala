@@ -27,6 +27,8 @@ class Enricher {
   private val eventCodes  = GDELTModel.eventCodes
   private val ethnicCodes = GDELTModel.ethnicCodes
   
+  private val religionCodes = GDELTModel.religionCodes
+
   def transform(dataset:DataFrame):DataFrame = {
     /*
      * Event enrichment: all event codes are enriched
@@ -54,6 +56,12 @@ class Enricher {
       .withColumn("Actor1_Geo_Type", geo_type_udf(col("Actor1_Geo_Type")))
       .withColumn("Actor2_Geo_Type", geo_type_udf(col("Actor2_Geo_Type")))
       .withColumn("Action_Geo_Type", geo_type_udf(col("Action_Geo_Type")))
+    
+      /** RELIGION CODE **/
+      .withColumn("Actor1_Religion1Code", ethnic_code_udf(religionCodes)(col("Actor1_Religion1Code")))
+      .withColumn("Actor1_Religion2Code", ethnic_code_udf(religionCodes)(col("Actor1_Religion2Code")))
+      .withColumn("Actor2_Religion1Code", ethnic_code_udf(religionCodes)(col("Actor2_Religion1Code")))
+      .withColumn("Actor2_Religion2Code", ethnic_code_udf(religionCodes)(col("Actor2_Religion2Code")))
         
       /** DROP **/
       

@@ -57,6 +57,8 @@ object GDELTModel extends Serializable {
 
   val eventCodes:Map[String,String]  = loadEventCodes
   val ethnicCodes:Map[String,String] = loadEthnicCodes
+
+  val religionCodes:Map[String,String] = loadReligionCodes
   
   def T[A](r: () => A): Option[A] = {
     try {
@@ -98,17 +100,25 @@ object GDELTModel extends Serializable {
   def loadEthnicCodes:Map[String,String] = {
 
     val is = this.getClass.getResourceAsStream("cameoEthnic.txt")
-    
-    scala.io.Source.fromInputStream(is, "UTF-8").getLines().toSeq.drop(1).map(line => {
-      val tokens = line.split("\t")
-      (tokens(0), tokens(1).toLowerCase)
-    })
-    .toMap
+    toMap(is)
+
   }
   
   def loadEventCodes:Map[String,String] = {
 
     val is = this.getClass.getResourceAsStream("cameoEvent.txt")
+    toMap(is)
+    
+  }
+  
+  def loadReligionCodes:Map[String,String] = {
+
+    val is = this.getClass.getResourceAsStream("cameoReligion.txt")
+    toMap(is)
+    
+  }
+
+  def toMap(is:java.io.InputStream):Map[String,String] = {
     
     scala.io.Source.fromInputStream(is, "UTF-8").getLines()
       /* Ignore header */
@@ -120,5 +130,4 @@ object GDELTModel extends Serializable {
       .toMap
     
   }
-
 }

@@ -208,6 +208,9 @@ class EventDownloader {
       columns.foreach{ case(oldName:String, newName:String, _skip:String) => 
         input = input.withColumnRenamed(oldName, newName)
       }
+      
+      input = input.withColumn("EventId", event_id_udf(col("EventId")))
+      
       /*
        * STEP #4: Semantic enrichment
        */
