@@ -29,14 +29,6 @@ import java.sql.Date
   imageURL   : Option[String] = None,
   imageBase64: Option[String] = None)
 
-
-case class CountryCode(
-  iso       : Option[String] = None,
-  iso3      : Option[String] = None,
-  isoNumeric: Option[String] = None,
-  fips      : Option[String] = None,
-  country   : Option[String] = None)
-
 case class EventCode(
   code : String,
   value: String
@@ -55,23 +47,16 @@ case class Mention(
 
 object GDELTModel extends Serializable {
 
+  val countryCodes:Map[String,String]  = loadCountryCodes
+
   val eventCodes:Map[String,String]  = loadEventCodes
   val ethnicCodes:Map[String,String] = loadEthnicCodes
 
+  val groupCodes:Map[String,String]    = loadGroupCodes
   val religionCodes:Map[String,String] = loadReligionCodes
+
+  val typeCodes:Map[String,String] = loadTypeCodes
   
-  def T[A](r: () => A): Option[A] = {
-    try {
-      val x: A = r.apply()
-      x match {
-        case _ if(x == null) => None
-        case p: String => if (p.trim.length == 0) None else Some(p.trim.asInstanceOf[A])
-        case _ => Some(x)
-      }
-    } catch {
-      case _: Throwable => None
-    }
-  }
   /**
    * A helper method to load country specific
    * geo information from a resource file.
@@ -79,22 +64,11 @@ object GDELTModel extends Serializable {
    * It is used to enrich the country specific
    * columns of a GDELT event.
    */
-  def loadCountryCodes = {
+  def loadCountryCodes:Map[String,String] = {
     
-    val is = this.getClass.getResourceAsStream("countryInfo.txt")
-    scala.io.Source.fromInputStream(is, "UTF-8").getLines()
-      .toSeq
-      /* Ignore header */
-      .drop(1).map(line => {
-        val tokens = line.split("\t")
-          CountryCode(
-            iso        = T(() => tokens(0)),
-            iso3       = T(() => tokens(1)),
-            isoNumeric = T(() => tokens(2)),
-            fips       = T(() => tokens(3)),
-            country    = T(() => tokens(4).toLowerCase())
-          )
-      })
+    val is = this.getClass.getResourceAsStream("cameoCountry.txt")
+    toMap(is)
+
   }
 
   def loadEthnicCodes:Map[String,String] = {
@@ -110,10 +84,24 @@ object GDELTModel extends Serializable {
     toMap(is)
     
   }
+
+  def loadGroupCodes:Map[String,String] = {
+
+    val is = this.getClass.getResourceAsStream("cameoGroup.txt")
+    toMap(is)
+
+  }
   
   def loadReligionCodes:Map[String,String] = {
 
     val is = this.getClass.getResourceAsStream("cameoReligion.txt")
+    toMap(is)
+    
+  }
+  
+  def loadTypeCodes:Map[String,String] = {
+
+    val is = this.getClass.getResourceAsStream("cameoType.txt")
     toMap(is)
     
   }

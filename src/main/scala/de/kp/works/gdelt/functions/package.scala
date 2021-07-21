@@ -28,6 +28,25 @@ import org.apache.spark.sql.functions._
 import scala.util.Try
 
 package object functions extends Serializable {
+    
+  def actor_udf = udf((row:Row) => row.toSeq.map(_.asInstanceOf[String]))
+    
+  def actor_geo_udf = udf((row:Row) => row
+    .toSeq
+    .map(value =>
+      if (value == null) "*" else value.asInstanceOf[String]))
+    
+  def action_udf = udf((row:Row) => row
+    .toSeq
+    .map(value =>
+      if (value == null) "*" else value.asInstanceOf[String]))
+  
+  def country_code_udf(countryCodes:Map[String,String]) = 
+    udf((countryCode:String) => {
+      val countryValue = codeToValue(countryCode, countryCodes)
+      Seq(countryCode, countryValue)
+     })
+  
   /**
    * The result describes an enriched hierarchy
    * of event dat can be used for grouping.
@@ -52,15 +71,7 @@ package object functions extends Serializable {
     udf((eventId:String) => eventId.replace("\"","").toInt)
     
   def ethnic_code_udf(ethnicCodes:Map[String,String]) = 
-    udf((ethnicCode:String) => {
-  
-      if (ethnicCode == null)
-        "unknown"
-        
-      else
-        ethnicCodes.getOrElse(ethnicCode, "unknown")
-        
-    })
+    udf((ethnicCode:String) => codeToValue(ethnicCode, ethnicCodes))
 
   def geo_type_udf = 
     udf((geoType:String) => {
@@ -75,6 +86,9 @@ package object functions extends Serializable {
         case _ => "UNKNOWN"
       }        
     })
+    
+  def group_code_udf(groupCodes:Map[String,String]) = 
+    udf((groupCode:String) => codeToValue(groupCode, groupCodes))
 
   def quad_class_udf = 
     udf((quadClass:String) => {
@@ -90,16 +104,15 @@ package object functions extends Serializable {
     })
     
   def religion_code_udf(religionCodes:Map[String,String]) = 
-    udf((religionCode:String) => {
-  
-      if (religionCode == null)
-        "unknown"
-        
-      else
-        religionCodes.getOrElse(religionCode, "unknown")
-        
-    })
+    udf((religionCode:String) => codeToValue(religionCode, religionCodes))
+    
+  def type_code_udf(typeCodes:Map[String,String]) = 
+    udf((typeCode:String) => codeToValue(typeCode, typeCodes))
 
+  def codeToValue(code:String, mapping:Map[String,String]):String = {
+      if (code == null)"*" else mapping.getOrElse(code, "*")        
+  }
+  
   def scrapeContent(iterator: Iterator[String], goose: Goose): Iterator[Content] = {
     
     iterator.map(url => {
