@@ -48,6 +48,8 @@ trait BaseDownloader[T] {
     this.asInstanceOf[T]
   }
   
+  def getSession = session
+  
   def filesToDF(path:String):DataFrame = {
     /*
      * STEP #1: Read file(s) as RDD[String]

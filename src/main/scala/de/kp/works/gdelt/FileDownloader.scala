@@ -26,6 +26,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 
 import de.kp.works.spark.Session
+import de.kp.works.gdelt.functions._
 
 class FileDownloader extends BaseDownloader[FileDownloader] {
   
@@ -38,7 +39,76 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
     repository = value
     this
   }
+  /**
+   * This method loads all `events` into a single
+   * dataframe and persists the result as parquet
+   * file.
+   * 
+   * Note: The events downloaded from the masterfiles
+   * contain 61 columns and does not match with events
+   * downloaded with the EventDownloader.
+   */
+  def prepareEvents:DataFrame = {
+    
+    val path = s"${repository}/event/*.export.CSV.zip"
+    val dataframe = filesToDF(path)
+
+    val outfile = s"${repository}/events.csv"
+    dataframe.write.mode(SaveMode.Overwrite).csv(outfile)
+      
+    var input = session.read
+      .format("com.databricks.spark.csv")
+      .option("header", "false")
+      .option("delimiter", ";")
+      .option("quote", " ")
+      .csv(outfile)
+    /*
+     * The result contains 61 columns
+     */
+    Event.columns.foreach{ case(oldName:String, newName:String, _skip:String) => 
+      input = input.withColumnRenamed(oldName, newName)
+    }
+      
+    input = input.withColumn("EventId", event_id_udf(col("EventId")))
+    input
+
+  }
+  /**
+   * This method loads all `graphs` into a single
+   * dataframe and persists the result as parquet
+   * file.
+   */
+  def prepareGraphs:Unit = {
+    
+    val path = s"${repository}/graph/*.gkg.CSV.zip"
+    filesToDF(path)
+      .write
+      .mode(SaveMode.Overwrite)
+      .parquet(s"${repository}/graphs.parquet")
+
+  }  
+  /**
+   * This method loads all `mentions` into a single
+   * dataframe and persists the result as parquet
+   * file.
+   */
+  def prepareMentions:Unit = {
+    
+    val path = s"${repository}/mention/*.mentions.CSV.zip"
+    filesToDF(path)
+      .write
+      .mode(SaveMode.Overwrite)
+      .parquet(s"${repository}/mentions.parquet")
+
+  }
   
+  /**
+   * This method the second stage of a GDELT ingestion
+   * pipe and leverages the `masterfiles` to download
+   * all referenced files. As a result, 3 different 
+   * folder are filled, each for events, graphs and
+   * mentions. 
+   */
   def downloadFiles:Unit = {
     
     val startts = System.currentTimeMillis
@@ -83,7 +153,13 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
        
     })
   }
-  
+  /**
+   * This method marks the first stage of a GDELT ingestion
+   * pipe and downloads the `masterfiles`, transforms its
+   * content into a DataFrame, enriches each file with the
+   * respective `category` and persists the result as a 
+   * parquet file.
+   */
   def prepareFiles(year:String):Unit = {
     /*
      * STEP #1: Download the masterfile list from GDELT
