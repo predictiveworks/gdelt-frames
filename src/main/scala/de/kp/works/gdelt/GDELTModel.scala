@@ -17,6 +17,17 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
+import java.sql.Date
+
+ case class Content(
+  url        : String,
+  title      : Option[String] = None,
+  content    : Option[String] = None,
+  description: Option[String] = None,
+  keywords   : Array[String] = Array.empty[String],
+  publishDate: Option[Date] = None,
+  imageURL   : Option[String] = None,
+  imageBase64: Option[String] = None)
 
 
 case class CountryCode(

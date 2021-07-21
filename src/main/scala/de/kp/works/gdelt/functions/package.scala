@@ -17,8 +17,15 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
+import java.sql.Date
+
+import com.gravity.goose.Goose
+import org.apache.commons.lang.StringUtils
+
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions._
+
+import scala.util.Try
 
 package object functions extends Serializable {
   /**
@@ -78,5 +85,39 @@ package object functions extends Serializable {
         case _ => "UNKNOWN"
       }    
     })
+
+  def scrapeContent(iterator: Iterator[String], goose: Goose): Iterator[Content] = {
+    
+    iterator.map(url => {
+      
+      Try {
+        
+        val article = goose.extractContent(url)
+        
+        val content = if (StringUtils.isNotEmpty(article.cleanedArticleText)) Some(article.cleanedArticleText.replaceAll("\\n+", "\n")) else None
+        val keywords = if (StringUtils.isNotEmpty(article.metaKeywords)) article.metaKeywords.split(",").map(_.trim.toUpperCase) else Array.empty[String]
+        
+        val desc =  if (StringUtils.isNotEmpty(article.metaDescription)) Some(article.metaDescription) else None
+        val title = if (StringUtils.isNotEmpty(article.title)) Some(article.title) else None
+        
+        val publishDate = if (article.publishDate != null) Some(new Date(article.publishDate.getTime)) else None
+        
+        val imageUrl = if (article.topImage != null && StringUtils.isNotEmpty(article.topImage.imageSrc)) Some(article.topImage.imageSrc) else None
+        val imageBase64 = if (article.topImage != null && StringUtils.isNotEmpty(article.topImage.imageBase64)) Some(article.topImage.imageBase64) else None
+        
+        Content(
+          url         = url,
+          title       = title,
+          content     = content,
+          description = desc,
+          keywords    = keywords,
+          publishDate = publishDate,
+          imageURL    = imageUrl,
+          imageBase64 =imageBase64)
+        
+      } getOrElse Content(url)
+      
+    })
+  }
     
 }
