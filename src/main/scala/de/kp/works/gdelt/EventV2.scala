@@ -17,8 +17,7 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
-
-object Event {
+object EventV2 {
   
   val columns = Array(
     ("_c0",  "EventId",      "Int"),
@@ -39,7 +38,7 @@ object Event {
     ("_c13", "Actor1_Type2Code",      "String"),
     ("_c14", "Actor1_Type3Code",      "String"),
     
-    /* ACTOR 2 Recipient or Victim*/
+    /* ACTOR 2 Recipient or Victim */
     ("_c15", "Actor2_Code",           "String"),
     ("_c16", "Actor2_Name",           "String"),
     ("_c17", "Actor2_CountryCode",    "String"),

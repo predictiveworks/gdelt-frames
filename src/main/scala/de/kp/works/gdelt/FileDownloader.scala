@@ -65,7 +65,7 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
     /*
      * The result contains 61 columns
      */
-    Event.columns.foreach{ case(oldName:String, newName:String, _skip:String) => 
+    EventV2.columns.foreach{ case(oldName:String, newName:String, _skip:String) => 
       input = input.withColumnRenamed(oldName, newName)
     }
       
@@ -95,10 +95,26 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
   def prepareMentions:Unit = {
     
     val path = s"${repository}/mention/*.mentions.CSV.zip"
-    filesToDF(path)
-      .write
-      .mode(SaveMode.Overwrite)
-      .parquet(s"${repository}/mentions.parquet")
+    val dataframe = filesToDF(path)
+
+    val outfile = s"${repository}/mentions.csv"
+    dataframe.write.mode(SaveMode.Overwrite).csv(outfile)
+      
+    var input = session.read
+      .format("com.databricks.spark.csv")
+      .option("header", "false")
+      .option("delimiter", ";")
+      .option("quote", " ")
+      .csv(outfile)
+    /*
+     * The result contains 14 columns
+     */
+    MentionV2.columns.foreach{ case(oldName:String, newName:String, _skip:String) => 
+      input = input.withColumnRenamed(oldName, newName)
+    }
+      
+    input = input.withColumn("EventId", event_id_udf(col("EventId")))
+    input
 
   }
   
