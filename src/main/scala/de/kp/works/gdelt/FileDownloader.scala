@@ -55,11 +55,14 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
 
     val outfile = s"${repository}/events.csv"
     dataframe.write.mode(SaveMode.Overwrite).csv(outfile)
-      
+    /*
+     * __MOD__ GDELT knowledge graph files leverage ';' and '#'
+     * to specify list entries
+     */
     var input = session.read
       .format("com.databricks.spark.csv")
       .option("header", "false")
-      .option("delimiter", ";")
+      .option("delimiter", DownloadUtil.DELIMITER)
       .option("quote", " ")
       .csv(outfile)
     /*
@@ -81,11 +84,29 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
   def prepareGraphs:Unit = {
     
     val path = s"${repository}/graph/*.gkg.CSV.zip"
-    filesToDF(path)
-      .write
-      .mode(SaveMode.Overwrite)
-      .parquet(s"${repository}/graphs.parquet")
+    val dataframe = filesToDF(path)
 
+    val outfile = s"${repository}/graphs.csv"
+    dataframe.write.mode(SaveMode.Overwrite).csv(outfile)
+    /*
+     * __MOD__ GDELT knowledge graph files leverage ';' and '#'
+     * to specify list entries
+     */
+    var input = session.read
+      .format("com.databricks.spark.csv")
+      .option("header", "false")
+      .option("delimiter", DownloadUtil.DELIMITER)
+      .option("quote", " ")
+      .csv(outfile)
+    /*
+     * The result contains 27 columns
+     */
+    GraphV2.columns.foreach{ case(oldName:String, newName:String, _skip:String) => 
+      input = input.withColumnRenamed(oldName, newName)
+    }
+      
+    input
+      
   }  
   /**
    * This method loads all `mentions` into a single
@@ -99,11 +120,14 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
 
     val outfile = s"${repository}/mentions.csv"
     dataframe.write.mode(SaveMode.Overwrite).csv(outfile)
-      
+    /*
+     * __MOD__ GDELT knowledge graph files leverage ';' and '#'
+     * to specify list entries
+     */
     var input = session.read
       .format("com.databricks.spark.csv")
       .option("header", "false")
-      .option("delimiter", ";")
+      .option("delimiter", DownloadUtil.DELIMITER)
       .option("quote", " ")
       .csv(outfile)
     /*

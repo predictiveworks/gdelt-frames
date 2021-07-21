@@ -28,6 +28,12 @@ import org.apache.spark.sql.types._
 
 import de.kp.works.spark.Session
 
+object DownloadUtil extends Serializable {
+ 
+  val DELIMITER:String = "|"
+ 
+}
+
 trait BaseDownloader[T] {
   
   protected val session = Session.getSession
@@ -35,7 +41,7 @@ trait BaseDownloader[T] {
 
   protected var date:String = ""
   protected var partitions:Int = sc.defaultMinPartitions
-
+  
   protected val verbose = true
   
   def setDate(value:String):T = {
@@ -68,8 +74,12 @@ trait BaseDownloader[T] {
             Stream.continually(br.readLine()).takeWhile(_ != null)
           }          
       }}
-      .map(line => {          
-        val text = line.replace("\r", "").replace("\t", ";")
+      .map(line => {   
+        /*
+         * __MOD__ GDELT knowledge graph files leverage ';' and '#'
+         * to specify list entries
+         */
+        val text = line.replace("\r", "").replace("\t", DownloadUtil.DELIMITER)
         Row(text)
       })
     /*
