@@ -56,11 +56,11 @@ trait BaseDownloader[T] {
   
   def getSession = session
   
-  def filesToDF(path:String):DataFrame = {
+  def filesToDF(inpath:String, outfile:String):DataFrame = {
     /*
      * STEP #1: Read file(s) as RDD[String]
      */
-    val rdd = sc.binaryFiles(path, partitions)
+    val rdd = sc.binaryFiles(inpath, partitions)
       .flatMap{ case(name:String, content:PortableDataStream) => {
         
         val zis = new ZipInputStream(content.open)
@@ -86,7 +86,18 @@ trait BaseDownloader[T] {
      * STEP #2: Transform file(s) into a dataframe 
      */
     val schema = StructType(Array(StructField("line", StringType, true)))
-    session.createDataFrame(rdd, schema)
+    val dataframe = session.createDataFrame(rdd, schema)
+    /*
+     * STEP #3: Write dataframe as *.csv file and reload
+     * with CSV format
+     */
+    dataframe.write.mode(SaveMode.Overwrite).csv(outfile)      
+    session.read
+      .format("com.databricks.spark.csv")
+      .option("header", "false")
+      .option("delimiter", DownloadUtil.DELIMITER)
+      .option("quote", " ")
+      .csv(outfile)
     
   }
 } 

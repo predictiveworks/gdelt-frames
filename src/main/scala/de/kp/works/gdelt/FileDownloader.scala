@@ -27,6 +27,9 @@ import org.apache.spark.sql.functions._
 
 import de.kp.works.spark.Session
 import de.kp.works.gdelt.functions._
+import de.kp.works.gdelt.model.MentionV2
+import de.kp.works.gdelt.model.EventV2
+import de.kp.works.gdelt.model.GraphV2
 
 class FileDownloader extends BaseDownloader[FileDownloader] {
   
@@ -50,21 +53,10 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
    */
   def prepareEvents:DataFrame = {
     
-    val path = s"${repository}/event/*.export.CSV.zip"
-    val dataframe = filesToDF(path)
-
+    val inpath = s"${repository}/event/*.export.CSV.zip"
     val outfile = s"${repository}/events.csv"
-    dataframe.write.mode(SaveMode.Overwrite).csv(outfile)
-    /*
-     * __MOD__ GDELT knowledge graph files leverage ';' and '#'
-     * to specify list entries
-     */
-    var input = session.read
-      .format("com.databricks.spark.csv")
-      .option("header", "false")
-      .option("delimiter", DownloadUtil.DELIMITER)
-      .option("quote", " ")
-      .csv(outfile)
+
+    var input = filesToDF(inpath, outfile)
     /*
      * The result contains 61 columns
      */
@@ -83,21 +75,10 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
    */
   def prepareGraphs:Unit = {
     
-    val path = s"${repository}/graph/*.gkg.CSV.zip"
-    val dataframe = filesToDF(path)
-
+    val inpath = s"${repository}/graph/*.gkg.CSV.zip"
     val outfile = s"${repository}/graphs.csv"
-    dataframe.write.mode(SaveMode.Overwrite).csv(outfile)
-    /*
-     * __MOD__ GDELT knowledge graph files leverage ';' and '#'
-     * to specify list entries
-     */
-    var input = session.read
-      .format("com.databricks.spark.csv")
-      .option("header", "false")
-      .option("delimiter", DownloadUtil.DELIMITER)
-      .option("quote", " ")
-      .csv(outfile)
+
+    var input = filesToDF(inpath, outfile)
     /*
      * The result contains 27 columns
      */
@@ -115,21 +96,10 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
    */
   def prepareMentions:Unit = {
     
-    val path = s"${repository}/mention/*.mentions.CSV.zip"
-    val dataframe = filesToDF(path)
-
+    val inpath = s"${repository}/mention/*.mentions.CSV.zip"
     val outfile = s"${repository}/mentions.csv"
-    dataframe.write.mode(SaveMode.Overwrite).csv(outfile)
-    /*
-     * __MOD__ GDELT knowledge graph files leverage ';' and '#'
-     * to specify list entries
-     */
-    var input = session.read
-      .format("com.databricks.spark.csv")
-      .option("header", "false")
-      .option("delimiter", DownloadUtil.DELIMITER)
-      .option("quote", " ")
-      .csv(outfile)
+
+    var input = filesToDF(inpath, outfile)
     /*
      * The result contains 14 columns
      */

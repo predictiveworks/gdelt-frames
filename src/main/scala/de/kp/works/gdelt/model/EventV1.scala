@@ -1,4 +1,4 @@
-package de.kp.works.gdelt
+package de.kp.works.gdelt.model
 /*
  * Copyright (c) 20129 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
  *
@@ -17,8 +17,11 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
-object EventV2 {
-  
+
+object EventV1 {
+  /*
+   * http://data.gdeltproject.org/documentation/GDELT-Event_Codebook-V2.0.pdf
+   */
   val columns = Array(
     ("_c0",  "EventId",      "Int"),
     ("_c1",  "Day",          "Int"),
@@ -38,7 +41,7 @@ object EventV2 {
     ("_c13", "Actor1_Type2Code",      "String"),
     ("_c14", "Actor1_Type3Code",      "String"),
     
-    /* ACTOR 2 Recipient or Victim */
+    /* ACTOR 2 Recipient or Victim*/
     ("_c15", "Actor2_Code",           "String"),
     ("_c16", "Actor2_Name",           "String"),
     ("_c17", "Actor2_CountryCode",    "String"),
@@ -66,32 +69,29 @@ object EventV2 {
     ("_c36", "Actor1_Geo_Fullname",    "String"),
     ("_c37", "Actor1_Geo_CountryCode", "String"),
     ("_c38", "Actor1_Geo_ADM1Code",    "String"),
-    ("_c39", "Actor1_Geo_ADM2Code",    "String"),
-    ("_c40", "Actor1_Geo_Lat",         "Float"),
-    ("_c41", "Actor1_Geo_Long",        "Float"),
-    ("_c42", "Actor1_Geo_FeatureID",   "String"),
+    ("_c39", "Actor1_Geo_Lat",         "Float"),
+    ("_c40", "Actor1_Geo_Long",        "Float"),
+    ("_c41", "Actor1_Geo_FeatureID",   "String"),
     
     /* ACTOR 2 GEO */
-    ("_c43", "Actor2_Geo_Type",        "Int"),
-    ("_c44", "Actor2_Geo_Fullname",    "String"),
-    ("_c45", "Actor2_Geo_CountryCode", "String"),
-    ("_c46", "Actor2_Geo_ADM1Code",    "String"),
-    ("_c47", "Actor2_Geo_ADM2Code",    "String"),
-    ("_c48", "Actor2_Geo_Lat",         "Float"),
-    ("_c49", "Actor2_Geo_Long",        "Float"),
-    ("_c50", "Actor2_Geo_FeatureID",   "String"),
+    ("_c42", "Actor2_Geo_Type",        "Int"),
+    ("_c43", "Actor2_Geo_Fullname",    "String"),
+    ("_c44", "Actor2_Geo_CountryCode", "String"),
+    ("_c45", "Actor2_Geo_ADM1Code",    "String"),
+    ("_c46", "Actor2_Geo_Lat",         "Float"),
+    ("_c47", "Actor2_Geo_Long",        "Float"),
+    ("_c48", "Actor2_Geo_FeatureID",   "String"),
     
     /* EVENT GEO */
-    ("_c51", "Action_Geo_Type",        "Int"),    
-    ("_c52", "Action_Geo_Fullname",    "String"),
-    ("_c53", "Action_Geo_CountryCode", "String"),
-    ("_c54", "Action_Geo_ADM1Code",    "String"),
-    ("_c55", "Action_Geo_ADM2Code",    "String"),    
-    ("_c56", "Action_Geo_Lat",         "Float"),
-    ("_c57", "Action_Geo_Long",        "Float"),
-    ("_c58", "Action_Geo_FeatureID",   "String"),
+    ("_c49", "Action_Geo_Type",        "Int"),    
+    ("_c50", "Action_Geo_Fullname",    "String"),
+    ("_c51", "Action_Geo_CountryCode", "String"),
+    ("_c52", "Action_Geo_ADM1Code",    "String"),
+    ("_c53", "Action_Geo_Lat",         "Float"),
+    ("_c54", "Action_Geo_Long",        "Float"),
+    ("_c55", "Action_Geo_FeatureID",   "String"),
     
-    ("_c59", "DateAdded", "String"),
+    ("_c56", "DateAdded", "String"),
     /*
 		 *  This field records the URL or citation of the first 
 		 *  news report it found this event in. In most cases this 
@@ -100,8 +100,8 @@ object EventV2 {
 		 *  pipeline, this may not always be the very first report, but 
 		 *  is at least in the first few reports.    
  		 */
-    ("_c60", "SourceUrl", "String")
+    ("_c57", "SourceUrl", "String")
     
   )
-
+  
 }
