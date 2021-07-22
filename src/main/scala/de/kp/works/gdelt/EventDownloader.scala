@@ -26,6 +26,7 @@ import org.apache.spark.sql.functions._
 
 import de.kp.works.gdelt.functions._
 import de.kp.works.gdelt.model.EventV1
+import de.kp.works.gdelt.enrich.EventEnricher
 
 /**
  * The base downloader of GDELT event files

@@ -1,4 +1,4 @@
-package de.kp.works.gdelt
+package de.kp.works.gdelt.api
 /*
  * Copyright (c) 20129 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
  *
@@ -17,8 +17,6 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
-import java.net.URLEncoder
-
 import org.apache.spark.sql._
 import scala.collection.mutable
 

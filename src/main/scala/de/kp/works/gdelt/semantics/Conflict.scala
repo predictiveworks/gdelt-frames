@@ -1,4 +1,4 @@
-package de.kp.works.gdelt
+package de.kp.works.gdelt.semantics
 /*
  * Copyright (c) 20129 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
  *
@@ -18,9 +18,17 @@ package de.kp.works.gdelt
  * 
  */
 
-class TvAIApi extends BaseApi[TvAIApi] {
-  /**
-   * https://blog.gdeltproject.org/television-2-0-ai-api-debuts/
-   */
+import org.apache.spark.sql._
+import org.apache.spark.sql.functions._
+
+class Conflict {
   
+  def transform(events:DataFrame):Unit = {
+    /*
+     * Filter conflicts, i.e. verbal and material conflicts
+     */
+    val conflicts = events.where(col("QuadClass").like("%Conflict%"))
+    conflicts.show
+    
+  }
 }

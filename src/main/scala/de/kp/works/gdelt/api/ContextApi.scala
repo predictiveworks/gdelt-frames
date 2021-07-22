@@ -1,4 +1,4 @@
-package de.kp.works.gdelt
+package de.kp.works.gdelt.api
 /*
  * Copyright (c) 20129 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
  *

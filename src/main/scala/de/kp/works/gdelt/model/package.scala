@@ -167,4 +167,9 @@ package object model {
        * values can be found in Leetaru (2012).
        */
       featureId:String = "*")
+      
+  case class EnhancedLocation(location:Location = Location(), offset:Int = -1)
+  
+  case class EnhancedPerson(person:String = "*", offset:Int = -1)
+  
 }

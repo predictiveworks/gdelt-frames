@@ -1,4 +1,4 @@
-package de.kp.works.gdelt
+package de.kp.works.gdelt.api
 /*
  * Copyright (c) 20129 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
  *
@@ -17,6 +17,8 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
+
+import de.kp.works.gdelt.Mention
 
 class GeoApi extends BaseApi[GeoApi] with GeoJson {
   /**

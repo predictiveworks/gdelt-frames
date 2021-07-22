@@ -1,4 +1,4 @@
-package de.kp.works.gdelt
+package de.kp.works.gdelt.api
 /*
  * Copyright (c) 20129 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
  *
@@ -17,22 +17,10 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
-import org.apache.spark.sql._
 
-class TvApi extends BaseApi[TvApi] {
+class TvAIApi extends BaseApi[TvAIApi] {
   /**
-   * https://blog.gdeltproject.org/gdelt-2-0-television-api-debuts/
+   * https://blog.gdeltproject.org/television-2-0-ai-api-debuts/
    */
-  private val base = "URL: https://api.gdeltproject.org/api/v2/tv/tv"
-  
-  private def request(query:String, params:Map[String,String]):DataFrame = {
-    
-    val encoded = encodeText(query)
-    val urlPart = paramsToUrl(params)
-    
-    val endpoint = s"${base}?query=${encoded}${urlPart}"
-    csvToDataFrame(endpoint)
-
-  }
   
 }

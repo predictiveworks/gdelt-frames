@@ -1,4 +1,4 @@
-package de.kp.works.gdelt
+package de.kp.works.gdelt.enrich
 /*
  * Copyright (c) 20129 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
  *
@@ -18,9 +18,9 @@ package de.kp.works.gdelt
  * 
  */
 import org.apache.spark.sql._
-
 import org.apache.spark.sql.functions._
 import de.kp.works.gdelt.functions._
+import de.kp.works.gdelt.GDELTModel
 
 class EventEnricher {
 

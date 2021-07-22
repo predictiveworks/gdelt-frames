@@ -156,6 +156,107 @@ package object functions extends Serializable {
       }    
     })
     
+  def locations_udf(countryCodes:Map[String,String]) =
+    udf((locations:String) => {
+      
+      if (locations != null) {
+
+        locations.split(";").map(location => {
+          
+          val blocks = location.split("#")      
+          /*
+           * 0: GeoType
+           * 1: GeoName
+           * 2: CountryCode
+           * 3: Adm1Code
+           * 4: Lat 
+           * 5: Lon
+           * 6: FeatureId
+           */
+          val `type` = blocks(0).trim.toInt match {
+            case 1 => "Country"
+            case 2 => "US State"
+            case 3 => "US City"
+            case 4 => "World City"
+            case 5 => "World State"
+            case _ => "*"
+          }
+          
+          val fullName = if (blocks(1) == null) "*" else blocks(1) 
+        
+          val countryCode = if (blocks(2) == null) "*" else blocks(2)
+          val countryName = codeToValue(countryCode, countryCodes)
+          
+          val adm1Code = if (blocks(3) == null) "*" else blocks(3)
+          val adm2Code = "*"
+          
+          val lat = if (blocks(4) == null) 0D else blocks(4).toDouble
+          val lon = if (blocks(5) == null) 0D else blocks(5).toDouble
+  
+          val featureId = if (blocks(6) == null) "*" else blocks(6)
+          Location(`type`, fullName, countryCode, countryName, adm1Code, adm2Code, Seq(lat, lon), featureId)
+          
+        }).toSeq
+        
+      } 
+      else 
+        Seq(Location())
+
+    })
+    
+  def enhanced_locations_udf(countryCodes:Map[String,String]) =
+    udf((enhancedLocations:String) => {
+      
+      if (enhancedLocations != null) {
+
+        enhancedLocations.split(";").map(enhancedLocation => {
+          
+          val blocks = enhancedLocation.split("#")      
+          /*
+           * 0: GeoType
+           * 1: GeoName
+           * 2: CountryCode
+           * 3: Adm1Code
+           * 4: Adm2Code
+           * 5: Lat 
+           * 6: Lon
+           * 7: FeatureId
+           * 8: Offset
+           */
+          val `type` = blocks(0).trim.toInt match {
+            case 1 => "Country"
+            case 2 => "US State"
+            case 3 => "US City"
+            case 4 => "World City"
+            case 5 => "World State"
+            case _ => "*"
+          }
+          
+          val fullName = if (blocks(1) == null) "*" else blocks(1) 
+        
+          val countryCode = if (blocks(2) == null) "*" else blocks(2)
+          val countryName = codeToValue(countryCode, countryCodes)
+          
+          val adm1Code = if (blocks(3) == null) "*" else blocks(3)
+          val adm2Code = if (blocks(4) == null) "*" else blocks(4)
+          
+          val lat = if (blocks(5) == null) 0D else blocks(5).toDouble
+          val lon = if (blocks(6) == null) 0D else blocks(6).toDouble
+  
+          val featureId = if (blocks(7) == null) "*" else blocks(7)
+          val location = Location(`type`, fullName, countryCode, countryName, adm1Code, adm2Code, Seq(lat, lon), featureId)
+          
+          val offset = blocks(8).toInt
+          EnhancedLocation(location, offset)
+          
+        }).toSeq
+        
+      }
+      else 
+        Seq(EnhancedLocation())
+    
+    })
+    
   def location_udf(countryCodes:Map[String,String], version:String="V1") =
     udf((row:Row) => {
       
@@ -216,9 +317,39 @@ package object functions extends Serializable {
       }
     })
 
-  def religion_code_udf(religionCodes:Map[String,String]) = 
-    udf((religionCode:String) => codeToValue(religionCode, religionCodes))
-    
+  def persons_udf = 
+    udf((persons:String) => {
+      
+      if (persons != null) {
+        persons.split(";").toSeq
+        
+      }
+      else 
+        Seq.empty[String]
+
+    })
+
+  def enhanced_persons_udf = 
+    udf((enhancedPersons:String) => {
+      
+      if (enhancedPersons != null) {
+        enhancedPersons.split(";").map(enhancedPerson => {
+          
+          val blocks = enhancedPerson.split(",")
+          
+          val person = if (blocks(0) == null) "*" else blocks(0)
+          val offset = blocks(1).toInt
+
+          EnhancedPerson(person, offset)
+          
+        }).toSeq
+        
+      }
+      else 
+        Seq(EnhancedPerson())
+
+    })
+
   def themes_udf = udf((themes:String) => {
   
     if (themes == null) Seq("*")

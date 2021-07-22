@@ -26,6 +26,7 @@ import de.kp.works.gdelt.functions._
 import de.kp.works.gdelt.model.MentionV2
 import de.kp.works.gdelt.model.EventV2
 import de.kp.works.gdelt.model.GraphV2
+import de.kp.works.gdelt.enrich.EventEnricher
 
 class FileDownloader extends BaseDownloader[FileDownloader] {
   

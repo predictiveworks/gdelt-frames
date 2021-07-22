@@ -1,4 +1,4 @@
-package de.kp.works.gdelt
+package de.kp.works.gdelt.api
 /*
  * Copyright (c) 20129 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
  *
@@ -18,9 +18,10 @@ package de.kp.works.gdelt
  * 
  */
 import com.google.gson._
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import de.kp.works.gdelt.Mention
+import de.kp.works.gdelt.MentionHtml
 
 trait GeoJson {
   
