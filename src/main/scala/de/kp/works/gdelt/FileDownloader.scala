@@ -17,10 +17,6 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
-import sys.process._
-
-import java.io.File
-import java.net.{HttpURLConnection, URL} 
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
@@ -34,8 +30,6 @@ import de.kp.works.gdelt.model.GraphV2
 class FileDownloader extends BaseDownloader[FileDownloader] {
   
   private val uri = "http://data.gdeltproject.org/gdeltv2/masterfilelist.txt"
-
-  private val timeout = 5000
   private var repository:String = ""
   
   def setRepository(value:String):FileDownloader = {
@@ -241,26 +235,6 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
     
     val fileName = s"${repository}/masterfiles.csv"
     downloadFile(uri, fileName)
-    
-  }
-
-  private def downloadFile(endpoint:String, fileName:String):Unit = {
-    
-    val url = new URL(endpoint)
-    val conn = url.openConnection().asInstanceOf[HttpURLConnection]
-    /*
-     * Set connection parameters
-     */
-    conn.setConnectTimeout(timeout)
-    conn.setReadTimeout(timeout)
-    
-    conn.connect()
-    
-    if (conn.getResponseCode >= 400)
-        println("The download of the GDELT master file failed with: " + conn.getResponseMessage)
-        
-    else
-        url #> new File(fileName) !!
     
   }
 }

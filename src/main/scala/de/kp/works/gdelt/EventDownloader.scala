@@ -40,49 +40,43 @@ class EventDownloader extends BaseDownloader[EventDownloader] {
     this
   }
 
-  def download:DataFrame = {
+  def download:Unit = {
     /*
      * The date is expected as YYYYMMDD
      */
     val fname = s"${date}.export.CSV.zip"
-    val uri = s"${base}/${fname}"
     
-    try {
-      /*
-       * STEP #1: Download event file to distributed
-       * file system; if the file is available already,
-       * an exception is thrown
-       */
-      try {
-        sc.addFile(uri)} 
-      
-      catch {
-        case t:Throwable => if (verbose) println(s"The file `${fname}` already exists")
-      }
-      /*
-       * STEP #2: Transform event file(s) into a dataframe
-       */
-      val inpath  = SparkFiles.get(fname)
-      val outfile = s"${path}/${date}.export.csv"
+    val endpoint = s"${base}/${fname}"
+    val fileName = s"${path}/event/${date}.export.csv"
 
-      var input = filesToDF(inpath, outfile)
-      /*
-       * The result contains 58 columns
-       */
-      EventV1.columns.foreach{ case(oldName:String, newName:String, _skip:String) => 
-        input = input.withColumnRenamed(oldName, newName)
-      }
-      
-      input = input.withColumn("EventId", event_id_udf(col("EventId")))
-      /*
-       * STEP #3: Semantic enrichment
-       */
-      val enricher = new EventEnricher().setVersion("V1")
-      enricher.transform(input)
-
-    } catch {
-      case t:Throwable => t.printStackTrace();session.emptyDataFrame
-    }
+    downloadFile(endpoint, fileName)
    
   }
+  
+  def transform:DataFrame = {
+
+    val inpath = s"${path}/event/${date}.export.csv"
+    val outfile = s"${path}/${date}.export.csv"
+
+    transform(inpath, outfile)
+    
+  }
+  
+  def transform(inpath:String, outfile:String):DataFrame = {
+
+    var input = filesToDF(inpath, outfile)
+    /*
+     * The result contains 58 columns
+     */
+    EventV1.columns.foreach{ case(oldName:String, newName:String, _skip:String) => 
+      input = input.withColumnRenamed(oldName, newName)
+    }
+    
+    input = input.withColumn("EventId", event_id_udf(col("EventId")))
+
+    val enricher = new EventEnricher().setVersion("V1")
+    enricher.transform(input)
+    
+  }
+
 }

@@ -17,6 +17,11 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
+import sys.process._
+
+import java.io.File
+import java.net.{HttpURLConnection, URL} 
+
 import java.io.{BufferedReader, InputStreamReader}
 import java.util.zip.ZipInputStream
 
@@ -41,6 +46,8 @@ trait BaseDownloader[T] {
 
   protected var date:String = ""
   protected var partitions:Int = sc.defaultMinPartitions
+
+  protected val timeout = 5000
   
   protected val verbose = true
   
@@ -100,4 +107,25 @@ trait BaseDownloader[T] {
       .csv(outfile)
     
   }
+
+  protected def downloadFile(endpoint:String, fileName:String):Unit = {
+    
+    val url = new URL(endpoint)
+    val conn = url.openConnection().asInstanceOf[HttpURLConnection]
+    /*
+     * Set connection parameters
+     */
+    conn.setConnectTimeout(timeout)
+    conn.setReadTimeout(timeout)
+    
+    conn.connect()
+    
+    if (conn.getResponseCode >= 400)
+        println("The download of the GDELT master file failed with: " + conn.getResponseMessage)
+        
+    else
+        url #> new File(fileName) !!
+    
+  }
+  
 } 
