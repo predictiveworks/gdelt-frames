@@ -65,7 +65,11 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
     }
       
     input = input.withColumn("EventId", event_id_udf(col("EventId")))
-    input
+    /*
+     * Semantic enrichment
+     */
+    val enricher = new EventEnricher().setVersion("V2")
+    enricher.transform(input)
 
   }
   /**

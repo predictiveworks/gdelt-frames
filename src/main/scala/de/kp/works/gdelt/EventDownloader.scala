@@ -74,11 +74,10 @@ class EventDownloader extends BaseDownloader[EventDownloader] {
       }
       
       input = input.withColumn("EventId", event_id_udf(col("EventId")))
-      
       /*
        * STEP #3: Semantic enrichment
        */
-      val enricher = new Enricher()
+      val enricher = new EventEnricher().setVersion("V1")
       enricher.transform(input)
 
     } catch {

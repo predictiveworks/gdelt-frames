@@ -25,27 +25,84 @@ import org.apache.commons.lang.StringUtils
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions._
 
+import de.kp.works.gdelt.model._
+
 import scala.util.Try
 
 package object functions extends Serializable {
     
-  def actor_udf = udf((row:Row) => row.toSeq.map(_.asInstanceOf[String]))
-    
-  def actor_geo_udf = udf((row:Row) => row
-    .toSeq
-    .map(value =>
-      if (value == null) "*" else value.asInstanceOf[String]))
+  def actor_udf(
+      countryCodes:Map[String,String], 
+      ethnicCodes:Map[String,String], 
+      groupCodes:Map[String,String], 
+      religionCodes:Map[String,String], 
+      typeCodes:Map[String,String]) = 
+    udf((row:Row) => {
+      /*
+       * 0: Code
+       * 1: Name
+       * 2: Country Code
+       * 3: Group Code
+       * 4: Ethnic Code
+       * 5: Religion1 Code
+       * 6: Religion2 Code
+       * 7: Type1 Code
+       * 8: Type2 Code
+       * 9: Type3 Code
+       */
+      val actorCode = if (row.getAs[String](0) == null) "*" else row.getAs[String](0)
+      val actorName = if (row.getAs[String](1) == null) "*" else row.getAs[String](1)
+      
+      val countryCode = if (row.getAs[String](2) == null) "*" else row.getAs[String](2)
+      val countryName = codeToValue(countryCode, countryCodes)
+      
+      val groupCode = if (row.getAs[String](3) == null) "*" else row.getAs[String](3)
+      val groupName = codeToValue(groupCode, groupCodes)
+      
+      val ethnicCode = if (row.getAs[String](4) == null) "*" else row.getAs[String](4)
+      val ethnicName = codeToValue(ethnicCode, ethnicCodes)
+      
+      val religion1Code = if (row.getAs[String](5) == null) "*" else row.getAs[String](5)
+      val religion1Name = codeToValue(religion1Code, religionCodes)
+      
+      val religion2Code = if (row.getAs[String](6) == null) "*" else row.getAs[String](6)
+      val religion2Name = codeToValue(religion2Code, religionCodes)
+      
+      val type1Code = if (row.getAs[String](7) == null) "*" else row.getAs[String](7)
+      val type1Name = codeToValue(type1Code, typeCodes)
+      
+      val type2Code = if (row.getAs[String](8) == null) "*" else row.getAs[String](8)
+      val type2Name = codeToValue(type2Code, typeCodes)
+      
+      val type3Code = if (row.getAs[String](9) == null) "*" else row.getAs[String](9)
+      val type3Name = codeToValue(type3Code, typeCodes)
+      
+      Actor(
+        actorCode,
+        actorName,
+        countryCode,
+        countryName,
+        groupCode,
+        groupName,
+        ethnicCode,
+        ethnicName,
+        religion1Code,
+        religion1Name,
+        religion2Code,
+        religion2Name,
+        type1Code,
+        type1Name,
+        type2Code,
+        type2Name,
+        type3Code,
+        type3Name)
+
+    })
     
   def action_udf = udf((row:Row) => row
     .toSeq
     .map(value =>
       if (value == null) "*" else value.asInstanceOf[String]))
-  
-  def country_code_udf(countryCodes:Map[String,String]) = 
-    udf((countryCode:String) => {
-      val countryValue = codeToValue(countryCode, countryCodes)
-      Seq(countryCode, countryValue)
-     })
   
   /**
    * The result describes an enriched hierarchy
@@ -53,17 +110,27 @@ package object functions extends Serializable {
    */
   def event_code_udf(eventCodes:Map[String,String]) = 
     udf((row:Row) => {
+      /*
+       * 0: EventRootCode
+       * 1: EventBaseCode
+       * 2: EventCode
+       */
+      val rootCode = if (row.getAs[String]("EventRootCode") == null) "*" else row.getAs[String]("EventRootCode")
+      val rootName = eventCodes.getOrElse(rootCode, "*")
       
-      val eventCode = row.getAs[String]("EventCode")
-      val eventBaseCode = row.getAs[String]("EventBaseCode")
-      
-      val eventRootCode = row.getAs[String]("EventRootCode")
+      val baseCode = if (row.getAs[String]("EventBaseCode") == null) "*" else row.getAs[String]("EventBaseCode")
+      val baseName = eventCodes.getOrElse(baseCode, "*")
 
-      Seq(
-        EventCode(eventRootCode, eventCodes.getOrElse(eventRootCode, "*")),
-        EventCode(eventBaseCode, eventCodes.getOrElse(eventBaseCode, "*")),
-        EventCode(eventCode, eventCodes.getOrElse(eventCode, "*"))
-      )
+      val eventCode = if (row.getAs[String]("EventCode") == null) "*" else row.getAs[String]("EventCode")
+      val eventName = eventCodes.getOrElse(eventCode, "*")
+
+      Event(
+          rootCode,
+          rootName,
+          baseCode,
+          baseName,
+          eventCode,
+          eventName)
       
     })
     
@@ -72,20 +139,6 @@ package object functions extends Serializable {
     
   def ethnic_code_udf(ethnicCodes:Map[String,String]) = 
     udf((ethnicCode:String) => codeToValue(ethnicCode, ethnicCodes))
-
-  def geo_type_udf = 
-    udf((geoType:String) => {
-      
-      val code = geoType.trim.toInt
-      code match {
-        case 1 => "COUNTRY"
-        case 2 => "USSTATE"
-        case 3 => "USCITY"
-        case 4 => "WORLDCITY"
-        case 5 => "WORLDSTATE"
-        case _ => "UNKNOWN"
-      }        
-    })
     
   def group_code_udf(groupCodes:Map[String,String]) = 
     udf((groupCode:String) => codeToValue(groupCode, groupCodes))
@@ -95,14 +148,74 @@ package object functions extends Serializable {
     
       val code = quadClass.trim.toInt
       code match {
-        case 1 => "VERBAL_COOPERATION"
-        case 2 => "MATERIAL_COOPERATION"
-        case 3 => "VERBAL_CONFLICT"
-        case 4 => "MATERIAL_CONFLICT"
-        case _ => "UNKNOWN"
+        case 1 => "Verbal Cooperation"
+        case 2 => "Material Cooperation"
+        case 3 => "Verbal Conflict"
+        case 4 => "Material Conflict"
+        case _ => "*"
       }    
     })
     
+  def location_udf(countryCodes:Map[String,String], version:String="V1") =
+    udf((row:Row) => {
+      
+      val `type` = row.getAs[String](0).trim.toInt match {
+        case 1 => "Country"
+        case 2 => "US State"
+        case 3 => "US City"
+        case 4 => "World City"
+        case 5 => "World State"
+        case _ => "*"
+      }
+      
+      val fullName = if (row.getAs[String](1) == null) "*" else row.getAs[String](1) 
+      
+      val countryCode = if (row.getAs[String](2) == null) "*" else row.getAs[String](2)
+      val countryName = codeToValue(countryCode, countryCodes)
+      
+      if (version == "V1") {
+        /*
+         * 0 : Geo_Type
+         * 1 : Geo_Fullname
+         * 2 : Geo_CountryCode
+         * 3 : Geo_ADM1Code
+         * 4 : Geo_Lat
+         * 5 : Geo_Long
+         * 6 : Geo_FeatureID
+         */
+        val adm1Code = if (row.getAs[String](3) == null) "*" else row.getAs[String](3)
+        val adm2Code = "*"
+        
+        val lat = if (row.getAs[String](4) == null) 0D else row.getAs[String](4).toDouble
+        val lon = if (row.getAs[String](5) == null) 0D else row.getAs[String](5).toDouble
+
+        val featureId = if (row.getAs[String](6) == null) "*" else row.getAs[String](6)
+        Location(`type`, fullName, countryCode, countryName, adm1Code, adm2Code, Seq(lat, lon), featureId)
+        
+      }
+      else {
+        /*
+         * 0 : Geo_Type
+         * 1 : Geo_Fullname
+         * 2 : Geo_CountryCode
+         * 3 : Geo_ADM1Code
+         * 4 : Geo_ADM2Code
+         * 5 : Geo_Lat
+         * 6 : Geo_Long
+         * 7 : Geo_FeatureID
+         */
+        val adm1Code = if (row.getAs[String](3) == null) "*" else row.getAs[String](3)
+        val adm2Code = if (row.getAs[String](4) == null) "*" else row.getAs[String](4)
+        
+        val lat = if (row.getAs[String](5) == null) 0D else row.getAs[String](5).toDouble
+        val lon = if (row.getAs[String](6) == null) 0D else row.getAs[String](6).toDouble
+
+        val featureId = if (row.getAs[String](7) == null) "*" else row.getAs[String](7)
+        Location(`type`, fullName, countryCode, countryName, adm1Code, adm2Code, Seq(lat, lon), featureId)
+        
+      }
+    })
+
   def religion_code_udf(religionCodes:Map[String,String]) = 
     udf((religionCode:String) => codeToValue(religionCode, religionCodes))
     

@@ -29,11 +29,6 @@ import java.sql.Date
   imageURL   : Option[String] = None,
   imageBase64: Option[String] = None)
 
-case class EventCode(
-  code : String,
-  value: String
-)
-
 case class MentionHtml(
   title:String, 
   uri  :String)
@@ -47,6 +42,7 @@ case class Mention(
 
 object GDELTModel extends Serializable {
 
+  val cameoCountryCodes:Map[String,String]  = loadCameoCountryCodes
   val countryCodes:Map[String,String]  = loadCountryCodes
 
   val eventCodes:Map[String,String]  = loadEventCodes
@@ -64,13 +60,39 @@ object GDELTModel extends Serializable {
    * It is used to enrich the country specific
    * columns of a GDELT event.
    */
-  def loadCountryCodes:Map[String,String] = {
+  def loadCameoCountryCodes:Map[String,String] = {
     
     val is = this.getClass.getResourceAsStream("cameoCountry.txt")
     toMap(is)
 
   }
 
+  def loadCountryCodes:Map[String,String] = {
+    
+    val is = this.getClass.getResourceAsStream("countryInfo.txt")
+    
+    scala.io.Source.fromInputStream(is, "UTF-8").getLines()
+      /* Ignore header */
+      .toSeq.drop(1)
+      .map(line => {
+        val tokens = line.split("\t")
+        /* The ISO code */
+        val iso = tokens(0).trim
+        
+        /* The FIPS code */
+        val fips = tokens(3).trim
+        
+        /* Country name */
+        val country = tokens(4).trim
+        
+        val code = if (fips.isEmpty) iso else fips
+        val value = country.toLowerCase
+        
+        (code, value)
+      })
+      .toMap
+       
+  }
   def loadEthnicCodes:Map[String,String] = {
 
     val is = this.getClass.getResourceAsStream("cameoEthnic.txt")

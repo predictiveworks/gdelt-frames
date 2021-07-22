@@ -20,6 +20,105 @@ package de.kp.works.gdelt
 
 package object model {
   
+  case class Actor(
+      /*
+    		 * The complete raw CAMEO code for Actor (includes geographic, class, ethnic, 
+    		 * religious, and type classes). May be blank if the system was unable to identify 
+    		 * an Actor.
+       */
+      actorCode:String = "*",
+      /*
+       * The actual name of the Actor. In the case of a political leader or organization, 
+       * this will be the leader’s formal name (GEORGE W BUSH, UNITED NATIONS), for a 
+       * geographic match it will be either the country or capital/major city name 
+       * (UNITED STATES / PARIS), and for ethnic, religious, and type matches it will 
+       * reflect the root match class (KURD, CATHOLIC, POLICE OFFICER, etc).
+       * 
+       * May be blank if the system was unable to identify an Actor.
+       */
+      actorName:String = "*",
+      /*
+       * The 3-character CAMEO code for the country affiliation of Actor. May be blank if 
+       * the system was unable to identify an Actor1 or determine its country affiliation 
+       * (such as "UNIDENTIFIED GUNMEN").
+       * 
+       * Note: This code is different from the Geo or Location country code
+       */
+      countryCode:String = "*",
+      countryName:String = "*",
+      /*
+       * If Actor is a known IGO/NGO/rebel organization (United Nations, World Bank, 
+       * al-Qaeda, etc) with its own CAMEO code, this field will contain that code.
+       */
+      groupCode:String = "*",
+      groupName:String = "*",
+      /*
+       * If the source document specifies the ethnic affiliation of Actor and that 
+       * ethnic group has a CAMEO entry, the CAMEO code is entered here.
+       */
+      ethnicCode:String = "*",
+      ethnicName:String = "*",
+      /*
+       * If the source document specifies the religious affiliation of Actor and that 
+       * religious group has a CAMEO entry, the CAMEO code is entered here.
+       */
+      religion1Code:String = "*",
+      religion1Name:String = "*",
+      /*
+       * If multiple religious codes are specified for Actor, this contains the secondary 
+       * code. Some religion entries automatically use two codes, such as Catholic, which 
+       * invokes Christianity as Code1 and Catholicism as Code2.
+       */
+      religion2Code:String = "*",
+      religion2Name:String = "*",
+      /*
+       * The 3-character CAMEO code of the CAMEO "type" or "role" of Actor, if specified.
+       * This can be a specific role such as Police Forces, Government, Military, Political 
+       * Opposition, Rebels, etc, a broad role class such as Education, Elites, Media, Refugees, 
+       * or organizational classes like Non-Governmental Movement.
+       * Special codes such as Moderate and Radical may refer to the operational strategy of a group.
+       */
+      type1Code:String = "*",
+      type1Name:String = "*",
+      /*
+       * If multiple type/role codes are specified for Actor, this returns the second code.
+       */
+      type2Code:String = "*",
+      type2Name:String = "*",
+      /*
+       * If multiple type/role codes are specified for Actor1, this returns the third code.
+       */
+      type3Code:String = "*",
+      type3Name:String = "*")
+  
+  case class Event(
+      /*
+       * This defines the root-level category the event code falls under. For example, 
+       * code "0251" ("Appeal for easing of administrative sanctions") has a root code 
+       * of "02" ("Appeal").
+       * 
+       * This makes it possible to aggregate events at various resolutions of specificity.
+       */
+      rootCode:String = "*",
+      rootName:String = "*",
+      /*
+       * AMEO event codes are defined in a three-level taxonomy. For events at level three 
+       * in the taxonomy, this yields its level two leaf root node. For example, code "0251" 
+       * ("Appeal for easing of administrative sanctions") would yield an EventBaseCode of 
+       * "025" ("Appeal to yield").
+       * 
+       * This makes it possible to aggregate events at various resolutions of specificity.
+       * For events at levels two or one, this field will be set to EventCode.
+       */
+      baseCode:String = "*",
+      baseName:String = "*",
+      /*
+       * This is the raw CAMEO action code describing the action that Actor1 performed 
+       * upon Actor2.
+       */
+      eventCode:String = "*",
+      eventName:String = "*")
+      
   case class Location(
       /*
        * This field specifies the geographic resolution of the match type and 
@@ -41,6 +140,7 @@ package object model {
        * This is the 2-character FIPS10-4 country code for the location.
        */
       countryCode:String = "*",
+      countryName:String = "*",
       /*
        * This is the 2-character FIPS10-4 country code followed by the 2-character 
        * FIPS10-4 administrative division 1 (ADM1) code for the administrative division 
