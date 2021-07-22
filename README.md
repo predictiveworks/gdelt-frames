@@ -11,7 +11,7 @@ for Apache Spark based machine learning and deep learning.
 
 GDELT’s primary data offering is that of a several petabyte-sized database with entries on events, actors in events, news mentions of events, and sentiment analysis. A range of interrelated datasets can be accessed which total trillions of data points. 
 
-Some of the most well-known use cases the GDELT datasets include: 
+Some of the most well-known use cases of the GDELT datasets include: 
 
 * Disaster Monitoring and Reporting
 * Event Monitoring
