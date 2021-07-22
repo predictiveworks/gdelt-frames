@@ -316,6 +316,40 @@ package object functions extends Serializable {
         
       }
     })
+    
+  def organisations_udf =
+    udf((organisations:String) => {
+      
+      if (organisations != null) {
+        organisations.split(";").toSeq
+        
+      }
+      else 
+        Seq.empty[String]
+
+    })
+    
+  def enhanced_organisations_udf =
+    udf((enhancedOrganisations:String) => {
+      
+      if (enhancedOrganisations != null) {
+        enhancedOrganisations.split(";").map(enhancedOrganisation => {
+          
+          val blocks = enhancedOrganisation.split(",")
+          
+          val organization = if (blocks(0) == null) "*" else blocks(0)
+          val offset = blocks(1).toInt
+
+          EnhancedOrganization(organization, offset)
+          
+        }).toSeq
+        
+      }
+      else 
+        Seq(EnhancedOrganization())
+
+      
+    })
 
   def persons_udf = 
     udf((persons:String) => {
@@ -352,14 +386,33 @@ package object functions extends Serializable {
 
   def themes_udf = udf((themes:String) => {
   
-    if (themes == null) Seq("*")
+    if (themes == null) Seq.empty[String]
     else {
-      themes.split(";")
-        .filter(theme => theme.nonEmpty && theme != null)
-        .toSeq
+      themes.split(";").toSeq
       
     }
   })
+
+  def enhanced_themes_udf = 
+    udf((enhancedThemes:String) => {
+      
+      if (enhancedThemes != null) {
+        enhancedThemes.split(";").map(enhancedTheme => {
+          
+          val blocks = enhancedTheme.split(",")
+          
+          val theme = if (blocks(0) == null) "*" else blocks(0)
+          val offset = blocks(1).toInt
+
+          EnhancedTheme(theme, offset)
+          
+        }).toSeq
+        
+      }
+      else 
+        Seq(EnhancedTheme())
+    
+    })
 
   def type_code_udf(typeCodes:Map[String,String]) = 
     udf((typeCode:String) => codeToValue(typeCode, typeCodes))

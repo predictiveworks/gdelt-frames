@@ -170,6 +170,10 @@ package object model {
       
   case class EnhancedLocation(location:Location = Location(), offset:Int = -1)
   
+  case class EnhancedOrganization(organization:String = "*", offset:Int = -1)
+  
   case class EnhancedPerson(person:String = "*", offset:Int = -1)
+  
+  case class EnhancedTheme(theme:String = "*", offset:Int = -1)
   
 }

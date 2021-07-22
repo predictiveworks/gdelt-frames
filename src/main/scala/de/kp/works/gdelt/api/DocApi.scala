@@ -217,6 +217,8 @@ class DocApi extends BaseApi[DocApi] {
     "wordcloudimagewebtags"
   )
   /*
+   * TIME SOMOOTHING
+   * 
    * This option is only available in the various Timeline modes and performs moving window smoothing over the 
    * specified number of time steps, up to a maximum of 30. Due to GDELT's high temporal resolution, timeline 
    * displays can sometimes capture too much of the chaotic noisy information environment that is the global 

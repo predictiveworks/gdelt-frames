@@ -34,11 +34,25 @@ class GraphEnricher {
       .withColumn("Locations", locations_udf(countryCodes)(col("Locations")))
       .withColumn("EnhancedLocations", enhanced_locations_udf(countryCodes)(col("EnhancedLocations")))
     /*
+     * Organizations & enhanced organizations
+     */
+    enriched = enriched
+      .withColumn("Organisations", organisations_udf(col("Organisations")))
+      .withColumn("EnhancedOrganisations", enhanced_organisations_udf(col("EnhancedOrganisations")))
+      
+    /*
      * Persons & enhanced persons
      */
     enriched = enriched
       .withColumn("Persons", persons_udf(col("Persons")))
       .withColumn("EnhancedPersons", enhanced_persons_udf(col("EnhancedPersons")))
+      
+    /*
+     * Themes & enhanced themes
+     */
+    enriched = enriched
+      .withColumn("Themes", themes_udf(col("Themes")))
+      .withColumn("EnhancedThemes", enhanced_themes_udf(col("EnhancedThemes")))
 
     enriched
   }
