@@ -19,20 +19,14 @@
     <encoding>UTF-8</encoding>
 
     <scala.binary.version>2.11</scala.binary.version>
-    <!-- 
-    The Apache Spark 2.3.4 was selected as it is not in conflict with [[akka-stream]] 
-    with respect to its scala-parser version
-     -->
-	<spark.version>2.4.7</spark.version>
+ 	<spark.version>2.4.7</spark.version>
+
   </properties>
 
   <dependencies>
 
-	<!-- AKKA 
-	
-	The version 10.0.12 was selected as it depends on Scala 2.11.11.
-	All more recent versions require at least 2.11.12
-	 -->
+	<!-- AKKA
+	-->
 	<dependency>
 	  <groupId>com.typesafe.akka</groupId>
 	  <artifactId>akka-http_${scala.binary.version}</artifactId>
@@ -46,21 +40,23 @@
 	</dependency>
 
     <!-- JSON 
-     -->
+    -->
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
       <version>2.8.7</version>
     </dependency>
 
-	<!--  APACHE SPARK MLLIB -->
+	<!--  APACHE SPARK MLLIB
+	-->
 	<dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-mllib_${scala.binary.version}</artifactId>
       <version>${spark.version}</version>
 	</dependency>
 
-	<!--  APACHE SPARK SQL -->
+	<!--  APACHE SPARK SQL
+	-->
 	<dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-sql_${scala.binary.version}</artifactId>
@@ -80,7 +76,6 @@
     H3: Uber's Hierarchical hexagonal geospatial
             indexing system
      -->
-
     <dependency>
         <groupId>com.uber</groupId>
         <artifactId>h3</artifactId>
