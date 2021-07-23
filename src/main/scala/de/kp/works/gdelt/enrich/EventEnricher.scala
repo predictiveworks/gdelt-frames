@@ -72,7 +72,7 @@ class EventEnricher extends BaseEnricher[EventEnricher] {
       
     val actorStruct = struct(actorCols.map(col): _*)    
     dataframe
-      .withColumn(s"Actor${num}", actor(actorStruct))
+      .withColumn(s"Actor$num", actor(actorStruct))
       .drop(actorCols: _*)
 
   }

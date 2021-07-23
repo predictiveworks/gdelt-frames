@@ -56,7 +56,7 @@ class ContextApi extends BaseApi[ContextApi] {
     val encoded = encodeText(query)
     val urlPart = paramsToUrl(params)
     
-    val endpoint = s"${base}?query=${encoded}${urlPart}&format=csv"
+    val endpoint = s"$base?query=$encoded$urlPart&format=csv"
     csvToDataFrame(endpoint)
 
   }

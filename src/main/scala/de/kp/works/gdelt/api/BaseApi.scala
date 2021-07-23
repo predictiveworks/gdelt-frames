@@ -22,11 +22,12 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 import de.kp.works.http.HttpConnect
 import de.kp.works.spark.Session
+import org.apache.spark.SparkContext
 
 trait BaseApi[T] extends HttpConnect {
   
-  protected val session = Session.getSession
-  protected val sc = session.sparkContext
+  protected val session: SparkSession = Session.getSession
+  protected val sc: SparkContext = session.sparkContext
   
   protected var folder:String = ""    
   protected var partitions:Int = 1
@@ -46,7 +47,7 @@ trait BaseApi[T] extends HttpConnect {
   }
 
   protected def paramsToUrl(params:Map[String,String]):String = {
-    params.map{case(k, v) => s"&${k}=${v}"}.mkString
+    params.map{case(k, v) => s"&$k=$v"}.mkString
   }
   /*
    * TIMESPAN. By default the DOC API searches the last 3 months of coverage monitored by GDELT. 
@@ -85,20 +86,20 @@ trait BaseApi[T] extends HttpConnect {
     
     val rdd = sc.parallelize(rows, partitions)
     
-    val schema = StructType(Array(StructField("line", StringType, true)))
-    val tempframe = session.createDataFrame(rdd, schema)
+    val schema = StructType(Array(StructField("line", StringType, nullable = true)))
+    val tempFrame = session.createDataFrame(rdd, schema)
 
     val uuid = java.util.UUID.randomUUID.toString
     
-    val tempfile = s"${folder}/${uuid}.csv"
-    tempframe.write.mode(SaveMode.Overwrite).csv(tempfile)
+    val tempFile = s"$folder/$uuid.csv"
+    tempFrame.write.mode(SaveMode.Overwrite).csv(tempFile)
       
     val dataframe = session.read
       .format("com.databricks.spark.csv")
       .option("header", header)
       .option("delimiter", ";")
       .option("quote", " ")
-      .csv(tempfile)
+      .csv(tempFile)
      
     dataframe
     

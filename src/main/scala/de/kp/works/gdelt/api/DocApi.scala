@@ -217,7 +217,7 @@ class DocApi extends BaseApi[DocApi] {
     "wordcloudimagewebtags"
   )
   /*
-   * TIME SOMOOTHING
+   * TIME SMOOTHING
    * 
    * This option is only available in the various Timeline modes and performs moving window smoothing over the 
    * specified number of time steps, up to a maximum of 30. Due to GDELT's high temporal resolution, timeline 
@@ -256,7 +256,7 @@ class DocApi extends BaseApi[DocApi] {
    */
   def article(query:String, mode:String, maxRecords:Int = 75, timespan:Int=3, timerange:String="month"):DataFrame = {
     
-    if (mode.toLowerCase.startsWith("art") == false)
+    if (!mode.toLowerCase.startsWith("art"))
       throw new Exception("The mode provided does not refer to article queries.")
     
     val params = mutable.HashMap.empty[String,String]
@@ -270,7 +270,7 @@ class DocApi extends BaseApi[DocApi] {
   
   def image(query:String, mode:String, timespan:Int=3, timerange:String="month"):DataFrame = {
     
-    if (mode.toLowerCase.startsWith("image") == false)
+    if (!mode.toLowerCase.startsWith("image"))
       throw new Exception("The mode provided does not refer to image queries.")
     
     val params = mutable.HashMap.empty[String,String]
@@ -284,7 +284,7 @@ class DocApi extends BaseApi[DocApi] {
   
   def timeline(query:String, mode:String, smoothing:Int = -1, timespan:Int=3, timerange:String="month"):DataFrame = {
     
-    if (mode.toLowerCase.startsWith("timeline") == false)
+    if (!mode.toLowerCase.startsWith("timeline"))
       throw new Exception("The mode provided does not refer to timeline queries.")
     
     if (smoothing > 30)
@@ -302,7 +302,7 @@ class DocApi extends BaseApi[DocApi] {
       
   }
   
-  def tonecart(query:String, timespan:Int=3, timerange:String="month"):DataFrame = {
+  def tonechart(query:String, timespan:Int=3, timerange:String="month"):DataFrame = {
     
     val params = mutable.HashMap.empty[String,String]
     
@@ -318,7 +318,7 @@ class DocApi extends BaseApi[DocApi] {
     val encoded = encodeText(query)
     val urlPart = paramsToUrl(params)
     
-    val endpoint = s"${base}?query=${encoded}${urlPart}&format=csv"
+    val endpoint = s"$base?query=$encoded$urlPart&format=csv"
     csvToDataFrame(endpoint)
 
   }

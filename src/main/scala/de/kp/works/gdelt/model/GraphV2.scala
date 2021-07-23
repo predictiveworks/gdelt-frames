@@ -18,9 +18,9 @@ package de.kp.works.gdelt.model
  * 
  */object GraphV2 {
   
-  val columns = Array(
+  val columns: Array[(String, String, String)] = Array(
     ("_c0",  "RecordId",              "String"),
-    ("_c1",  "PublisDate",            "Long"),
+    ("_c1",  "PublishDate",            "Long"),
     ("_c2",  "SourceCollectionId",    "String"),
     ("_c3",  "SourceCommonName",      "String"),
     ("_c4",  "DocumentIdentifier",    "String"),

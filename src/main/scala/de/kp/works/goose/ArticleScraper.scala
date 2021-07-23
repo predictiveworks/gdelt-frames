@@ -124,8 +124,8 @@ class ArticleScraper(override val uid: String) extends Transformer with ScraperP
      * match pre-defined annotators  
      */
     $(annotationCols).foreach(colname => {
-      if (ANNOTATORS.contains(colname) == false) {
-        throw new Exception(s"Annotation `${colname}` is not supported.")
+      if (!ANNOTATORS.contains(colname)) {
+        throw new Exception(s"Annotation `$colname` is not supported.")
       }
     })
     
@@ -176,19 +176,15 @@ class ArticleScraper(override val uid: String) extends Transformer with ScraperP
        */
       articles.map(article => {
         
-        val annotations: Seq[Any] = ${annotationCols}.map{colname =>
-          colname match {
-            case ANNOTATOR_TITLE        => article.title.getOrElse("")
-            case ANNOTATOR_DESCRIPTION  => article.description.getOrElse("")
-            case ANNOTATOR_CONTENT      => article.content.getOrElse("")
-            case ANNOTATOR_KEYWORDS     => article.keywords
-            case ANNOTATOR_PUBLISH_DATE => article.publishDate.orNull
-            case ANNOTATOR_IMAGE_URL    => article.imageURL.getOrElse("")
-            case ANNOTATOR_IMAGE_BASE64 => article.imageBase64.getOrElse("")
-          }
-          
+        val annotations: Seq[Any] = $(annotationCols).map {
+          case ANNOTATOR_TITLE => article.title.getOrElse("")
+          case ANNOTATOR_DESCRIPTION => article.description.getOrElse("")
+          case ANNOTATOR_CONTENT => article.content.getOrElse("")
+          case ANNOTATOR_KEYWORDS => article.keywords
+          case ANNOTATOR_PUBLISH_DATE => article.publishDate.orNull
+          case ANNOTATOR_IMAGE_URL => article.imageURL.getOrElse("")
+          case ANNOTATOR_IMAGE_BASE64 => article.imageBase64.getOrElse("")
         }
-        .toSeq        
         
         Row.fromSeq(Seq(article.url) ++ annotations)
         
@@ -205,16 +201,14 @@ class ArticleScraper(override val uid: String) extends Transformer with ScraperP
   override def transformSchema(schema:StructType): StructType = {
 
     StructType(
-      schema.seq ++ ${annotationCols}.map{colname =>
-        colname match {
-          case ANNOTATOR_TITLE        => StructField(colname, StringType, nullable = false)
-          case ANNOTATOR_DESCRIPTION  => StructField(colname, StringType, nullable = false)
-          case ANNOTATOR_CONTENT      => StructField(colname, StringType, nullable = false)
-          case ANNOTATOR_KEYWORDS     => StructField(colname, ArrayType.apply(StringType), nullable = false)
-          case ANNOTATOR_PUBLISH_DATE => StructField(colname, DateType, nullable = true)
-          case ANNOTATOR_IMAGE_URL    => StructField(colname, StringType, nullable = true)
-          case ANNOTATOR_IMAGE_BASE64 => StructField(colname, StringType, nullable = true)
-        }
+      schema.seq ++ $(annotationCols).map {
+        case colname@ANNOTATOR_TITLE => StructField(colname, StringType, nullable = false)
+        case colname@ANNOTATOR_DESCRIPTION => StructField(colname, StringType, nullable = false)
+        case colname@ANNOTATOR_CONTENT => StructField(colname, StringType, nullable = false)
+        case colname@ANNOTATOR_KEYWORDS => StructField(colname, ArrayType.apply(StringType), nullable = false)
+        case colname@ANNOTATOR_PUBLISH_DATE => StructField(colname, DateType, nullable = true)
+        case colname@ANNOTATOR_IMAGE_URL => StructField(colname, StringType, nullable = true)
+        case colname@ANNOTATOR_IMAGE_BASE64 => StructField(colname, StringType, nullable = true)
       }
     )
     

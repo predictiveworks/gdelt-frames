@@ -109,9 +109,9 @@ trait GeoJson {
        * and others
        */
       val rawdata = script.data()
-      if (rawdata.isEmpty == false) {
+      if (rawdata.nonEmpty) {
         /*
-         * Extrac GeoJSON from one the non-empty
+         * Extract GeoJSON from one the non-empty
          * script tags
          */
         if (rawdata.trim.startsWith("var pointmap =")) {
@@ -126,9 +126,9 @@ trait GeoJson {
             JsonParser.parseString(rawstr)
             
           } catch {
-            case t:Throwable => {
-              t.printStackTrace(); null
-            }
+            case t:Throwable =>
+              t.printStackTrace()
+              null
           }
         }
       }

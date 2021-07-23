@@ -177,7 +177,9 @@ package object model {
       featureId:String = "*")
       
   case class EnhancedLocation(location:Location = Location(), offset:Int = -1)
-  
+
+  case class EnhancedName(name:String = "*", offset:Int = -1)
+
   case class EnhancedOrganization(organization:String = "*", offset:Int = -1)
   
   case class EnhancedPerson(person:String = "*", offset:Int = -1)

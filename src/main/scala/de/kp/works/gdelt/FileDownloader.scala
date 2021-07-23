@@ -18,15 +18,11 @@ package de.kp.works.gdelt
  * 
  */
 
+import de.kp.works.gdelt.enrich.EventEnricher
+import de.kp.works.gdelt.functions._
+import de.kp.works.gdelt.model.{EventV2, GraphV2, MentionV2}
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
-
-import de.kp.works.spark.Session
-import de.kp.works.gdelt.functions._
-import de.kp.works.gdelt.model.MentionV2
-import de.kp.works.gdelt.model.EventV2
-import de.kp.works.gdelt.model.GraphV2
-import de.kp.works.gdelt.enrich.EventEnricher
 
 class FileDownloader extends BaseDownloader[FileDownloader] {
   
@@ -48,8 +44,8 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
    */
   def prepareEvents:DataFrame = {
     
-    val inpath = s"${repository}/event/*.export.CSV.zip"
-    val outfile = s"${repository}/events.csv"
+    val inpath = s"$repository/event/*.export.CSV.zip"
+    val outfile = s"$repository/events.csv"
 
     var input = filesToDF(inpath, outfile)
     /*
@@ -72,10 +68,10 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
    * dataframe and persists the result as parquet
    * file.
    */
-  def prepareGraphs:Unit = {
+  def prepareGraphs:DataFrame = {
     
-    val inpath = s"${repository}/graph/*.gkg.CSV.zip"
-    val outfile = s"${repository}/graphs.csv"
+    val inpath = s"$repository/graph/*.gkg.CSV.zip"
+    val outfile = s"$repository/graphs.csv"
 
     var input = filesToDF(inpath, outfile)
     /*
@@ -93,10 +89,10 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
    * dataframe and persists the result as parquet
    * file.
    */
-  def prepareMentions:Unit = {
+  def prepareMentions():DataFrame = {
     
-    val inpath = s"${repository}/mention/*.mentions.CSV.zip"
-    val outfile = s"${repository}/mentions.csv"
+    val inpath = s"$repository/mention/*.mentions.CSV.zip"
+    val outfile = s"$repository/mentions.csv"
 
     var input = filesToDF(inpath, outfile)
     /*
@@ -118,35 +114,35 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
    * folder are filled, each for events, graphs and
    * mentions. 
    */
-  def downloadFiles:Unit = {
+  def downloadFiles():Unit = {
     
     val startts = System.currentTimeMillis
     
-    val masterfiles = session.read.parquet(s"${repository}/masterfiles.parquet")
+    val masterfiles = session.read.parquet(s"$repository/masterfiles.parquet")
     
     val ts0 = System.currentTimeMillis
-    if (verbose) println("Masterfiles loaded in ${ts0 - startts} ms.")
+    if (verbose) println(s"Masterfiles loaded in ${ts0 - startts} ms.")
     /*
      * STEP #1: Download event files from masterfiles
      */
     download(masterfiles, "event")
 
     val ts1 = System.currentTimeMillis
-    if (verbose) println("Event files downloaded in ${ts1 - ts0} ms.")
+    if (verbose) println(s"Event files downloaded in ${ts1 - ts0} ms.")
     /*
      * STEP #2: Download graph files from masterfiles
      */
     download(masterfiles, "graph")
 
     val ts2 = System.currentTimeMillis
-    if (verbose) println("Graph files downloaded in ${ts2 - ts1} ms.")
+    if (verbose) println(s"Graph files downloaded in ${ts2 - ts1} ms.")
     /*
      * STEP #2: Download mention files from masterfiles
      */
     download(masterfiles, "mention")
 
     val ts3 = System.currentTimeMillis
-    if (verbose) println("Mention files downloaded in ${ts3 - ts2} ms.")
+    if (verbose) println(s"Mention files downloaded in ${ts3 - ts2} ms.")
 
   }
   
@@ -156,7 +152,7 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
     files.select("url").repartition(100).foreach(row => {
       
        val endpoint = row.getAs[String](0)
-       val fileName = s"${repository}/${category}/${row.getAs[String](0).split("/").last}"
+       val fileName = s"$repository/$category/${row.getAs[String](0).split("/").last}"
        
        downloadFile(endpoint, fileName)
        
@@ -175,11 +171,11 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
      * and restrict its content to the provided year,
      * and finally save as parquet file.
      */
-    downloadMasterFiles
+    downloadMasterFiles()
     /*
      * STEP #2: Read master file list with Apache Spark
      */
-    val fileName = s"${repository}/masterfiles.csv"
+    val fileName = s"$repository/masterfiles.csv"
     val masterfiles = session.read
       .format("com.databricks.spark.csv")
       .option("header", "false")
@@ -219,22 +215,22 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
     })  
 
     masterfiles
-      .where(col("url").like(s"%/${year}%"))
+      .where(col("url").like(s"%/$year%"))
       .select("size", "url")
       .withColumn("category", category_udf(col("url")))
       .filter(not(col("category") === "unknown"))
       .write
       .mode(SaveMode.Overwrite)
-      .parquet(s"${repository}/masterfiles.parquet")
+      .parquet(s"$repository/masterfiles.parquet")
     
   }
   
-  private def downloadMasterFiles:Unit = {
+  private def downloadMasterFiles():Unit = {
     
     if (repository.isEmpty)
       throw new Exception("No repository provided.")
     
-    val fileName = s"${repository}/masterfiles.csv"
+    val fileName = s"$repository/masterfiles.csv"
     downloadFile(uri, fileName)
     
   }

@@ -21,16 +21,16 @@ import de.kp.works.gdelt.GDELTModel
 
 trait BaseEnricher[T] {
   
-  protected val cameoCountryCodes  = GDELTModel.cameoCountryCodes
-  protected val countryCodes  = GDELTModel.countryCodes
+  protected val cameoCountryCodes: Map[String, String] = GDELTModel.cameoCountryCodes
+  protected val countryCodes: Map[String, String] = GDELTModel.countryCodes
 
-  protected val eventCodes  = GDELTModel.eventCodes
-  protected val ethnicCodes = GDELTModel.ethnicCodes
+  protected val eventCodes: Map[String, String] = GDELTModel.eventCodes
+  protected val ethnicCodes: Map[String, String] = GDELTModel.ethnicCodes
   
-  protected val groupCodes    = GDELTModel.groupCodes
-  protected val religionCodes = GDELTModel.religionCodes
+  protected val groupCodes: Map[String, String] = GDELTModel.groupCodes
+  protected val religionCodes: Map[String, String] = GDELTModel.religionCodes
 
-  protected val typeCodes  = GDELTModel.typeCodes
+  protected val typeCodes: Map[String, String] = GDELTModel.typeCodes
 
   protected var resolution:Int = 7
   protected var version:String = "V1"

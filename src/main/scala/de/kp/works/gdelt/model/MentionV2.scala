@@ -20,7 +20,7 @@ package de.kp.works.gdelt.model
 
 object MentionV2 {
   
-  val columns = Array(
+  val columns: Array[(String, String, String)] = Array(
     ("_c0",  "EventId",        "Int"),
     ("_c1",  "EventTime",      "Int"),
     ("_c2",  "MentionTime",    "Int"),

@@ -55,6 +55,18 @@
       <version>2.8.6</version>
     </dependency>
 
+    <!-- APACHE HADOOP
+
+    Google's BigQuery connector requires a Guava version
+    that is not supported by version 2.6.5 of Spark's
+    Hadoop client.
+    -->
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hadoop-client</artifactId>
+      <version>2.7.2</version>
+    </dependency>
+
 	<!-- APACHE SPARK MLLIB
 	-->
 	<dependency>
@@ -62,6 +74,10 @@
       <artifactId>spark-mllib_${scala.binary.version}</artifactId>
       <version>${spark.version}</version>
       <exclusions>
+        <exclusion>
+          <groupId>org.apache.hadoop</groupId>
+          <artifactId>hadoop-client</artifactId>
+        </exclusion>
         <!-- Version 2.5.0  is not compliant with BigQuery-->
         <exclusion>
           <groupId>com.google.protobuf</groupId>

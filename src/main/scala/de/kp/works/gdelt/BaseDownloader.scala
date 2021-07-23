@@ -17,21 +17,16 @@ package de.kp.works.gdelt
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
-import sys.process._
-
-import java.io.File
-import java.net.{HttpURLConnection, URL} 
-
-import java.io.{BufferedReader, InputStreamReader}
-import java.util.zip.ZipInputStream
-
-import org.apache.spark._
-
+import de.kp.works.spark.Session
+import org.apache.spark.SparkContext
 import org.apache.spark.input.PortableDataStream
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
-import de.kp.works.spark.Session
+import java.io.{BufferedReader, File, InputStreamReader}
+import java.net.{HttpURLConnection, URL}
+import java.util.zip.ZipInputStream
+import scala.sys.process._
 
 object DownloadUtil extends Serializable {
  
@@ -41,8 +36,8 @@ object DownloadUtil extends Serializable {
 
 trait BaseDownloader[T] {
   
-  protected val session = Session.getSession
-  protected val sc = session.sparkContext
+  protected val session: SparkSession = Session.getSession
+  protected val sc: SparkContext = session.sparkContext
 
   protected var date:String = ""
   protected var partitions:Int = sc.defaultMinPartitions
@@ -61,15 +56,15 @@ trait BaseDownloader[T] {
     this.asInstanceOf[T]
   }
   
-  def getSession = session
+  def getSession: SparkSession = session
   
   def filesToDF(inpath:String, outfile:String):DataFrame = {
     /*
      * STEP #1: Read file(s) as RDD[String]
      */
     val rdd = sc.binaryFiles(inpath, partitions)
-      .flatMap{ case(name:String, content:PortableDataStream) => {
-        
+      .flatMap{ case(name:String, content:PortableDataStream) =>
+
         val zis = new ZipInputStream(content.open)
         Stream.continually(zis.getNextEntry)
           .takeWhile {
@@ -79,8 +74,8 @@ trait BaseDownloader[T] {
           .flatMap { _ =>
             val br = new BufferedReader(new InputStreamReader(zis))
             Stream.continually(br.readLine()).takeWhile(_ != null)
-          }          
-      }}
+          }
+      }
       .map(line => {   
         /*
          * __MOD__ GDELT knowledge graph files leverage ';' and '#'
@@ -92,7 +87,7 @@ trait BaseDownloader[T] {
     /*
      * STEP #2: Transform file(s) into a dataframe 
      */
-    val schema = StructType(Array(StructField("line", StringType, true)))
+    val schema = StructType(Array(StructField("line", StringType, nullable = true)))
     val dataframe = session.createDataFrame(rdd, schema)
     /*
      * STEP #3: Write dataframe as *.csv file and reload

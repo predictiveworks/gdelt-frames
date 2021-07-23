@@ -18,15 +18,13 @@ package de.kp.works.gdelt
  * 
  */
 import java.sql.Date
-
 import com.gravity.goose.Goose
 import org.apache.commons.lang.StringUtils
-
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions._
-
 import de.kp.works.gdelt.h3.H3Utils
 import de.kp.works.gdelt.model._
+import org.apache.spark.sql.expressions.UserDefinedFunction
 
 import scala.util.Try
 
@@ -37,7 +35,7 @@ package object functions extends Serializable {
       ethnicCodes:Map[String,String], 
       groupCodes:Map[String,String], 
       religionCodes:Map[String,String], 
-      typeCodes:Map[String,String]) = 
+      typeCodes:Map[String,String]): UserDefinedFunction =
     udf((row:Row) => {
       /*
        * 0: Code
@@ -100,7 +98,7 @@ package object functions extends Serializable {
 
     })
     
-  def action_udf = udf((row:Row) => row
+  def action_udf: UserDefinedFunction = udf((row:Row) => row
     .toSeq
     .map(value =>
       if (value == null) "*" else value.asInstanceOf[String]))
@@ -109,7 +107,7 @@ package object functions extends Serializable {
    * The result describes an enriched hierarchy
    * of event dat can be used for grouping.
    */
-  def event_code_udf(eventCodes:Map[String,String]) = 
+  def event_code_udf(eventCodes:Map[String,String]): UserDefinedFunction =
     udf((row:Row) => {
       /*
        * 0: EventRootCode
@@ -135,16 +133,16 @@ package object functions extends Serializable {
       
     })
     
-  def event_id_udf = 
+  def event_id_udf: UserDefinedFunction =
     udf((eventId:String) => eventId.replace("\"","").toInt)
     
-  def ethnic_code_udf(ethnicCodes:Map[String,String]) = 
+  def ethnic_code_udf(ethnicCodes:Map[String,String]): UserDefinedFunction =
     udf((ethnicCode:String) => codeToValue(ethnicCode, ethnicCodes))
     
-  def group_code_udf(groupCodes:Map[String,String]) = 
+  def group_code_udf(groupCodes:Map[String,String]): UserDefinedFunction =
     udf((groupCode:String) => codeToValue(groupCode, groupCodes))
 
-  def quad_class_udf = 
+  def quad_class_udf: UserDefinedFunction =
     udf((quadClass:String) => {
     
       val code = quadClass.trim.toInt
@@ -162,7 +160,7 @@ package object functions extends Serializable {
    * into a H3 index of the provided resolution. This enables
    * an easy grouping of events that refer to the same hexagon.
    */
-  def locations_udf(resolution:Int, countryCodes:Map[String,String]) =
+  def locations_udf(resolution:Int, countryCodes:Map[String,String]): UserDefinedFunction =
     udf((locations:String) => {
       
       if (locations != null) {
@@ -223,7 +221,7 @@ package object functions extends Serializable {
 
     })
     
-  def enhanced_locations_udf(resolution:Int, countryCodes:Map[String,String]) =
+  def enhanced_locations_udf(resolution:Int, countryCodes:Map[String,String]): UserDefinedFunction =
     udf((enhancedLocations:String) => {
       
       if (enhancedLocations != null) {
@@ -289,7 +287,7 @@ package object functions extends Serializable {
     
     })
     
-  def location_udf(resolution:Int, countryCodes:Map[String,String], version:String="V1") =
+  def location_udf(resolution:Int, countryCodes:Map[String,String], version:String="V1"): UserDefinedFunction =
     udf((row:Row) => {
       
       val `type` = row.getAs[String](0).trim.toInt match {
@@ -374,8 +372,30 @@ package object functions extends Serializable {
         
       }
     })
-    
-  def organisations_udf =
+
+  def names_udf: UserDefinedFunction =
+    udf((allNames:String) => {
+
+      if (allNames != null) {
+        allNames.split(";").map(allName => {
+
+          val blocks = allName.split(",")
+
+          val name = if (blocks(0) == null) "*" else blocks(0)
+          val offset = blocks(1).toInt
+
+          EnhancedName(name, offset)
+
+        }).toSeq
+
+      }
+      else
+        Seq(EnhancedName())
+
+
+    })
+
+  def organisations_udf: UserDefinedFunction =
     udf((organisations:String) => {
       
       if (organisations != null) {
@@ -387,7 +407,7 @@ package object functions extends Serializable {
 
     })
     
-  def enhanced_organisations_udf =
+  def enhanced_organisations_udf: UserDefinedFunction =
     udf((enhancedOrganisations:String) => {
       
       if (enhancedOrganisations != null) {
@@ -406,10 +426,9 @@ package object functions extends Serializable {
       else 
         Seq(EnhancedOrganization())
 
-      
     })
 
-  def persons_udf = 
+  def persons_udf: UserDefinedFunction =
     udf((persons:String) => {
       
       if (persons != null) {
@@ -421,7 +440,7 @@ package object functions extends Serializable {
 
     })
 
-  def enhanced_persons_udf = 
+  def enhanced_persons_udf: UserDefinedFunction =
     udf((enhancedPersons:String) => {
       
       if (enhancedPersons != null) {
@@ -442,16 +461,17 @@ package object functions extends Serializable {
 
     })
 
-  def themes_udf = udf((themes:String) => {
-  
-    if (themes == null) Seq.empty[String]
-    else {
-      themes.split(";").toSeq
-      
-    }
-  })
+  def themes_udf: UserDefinedFunction =
+    udf((themes:String) => {
 
-  def enhanced_themes_udf = 
+      if (themes == null) Seq.empty[String]
+      else {
+        themes.split(";").toSeq
+
+      }
+    })
+
+  def enhanced_themes_udf: UserDefinedFunction =
     udf((enhancedThemes:String) => {
       
       if (enhancedThemes != null) {
@@ -472,7 +492,7 @@ package object functions extends Serializable {
     
     })
 
-  def type_code_udf(typeCodes:Map[String,String]) = 
+  def type_code_udf(typeCodes:Map[String,String]): UserDefinedFunction =
     udf((typeCode:String) => codeToValue(typeCode, typeCodes))
 
   def codeToValue(code:String, mapping:Map[String,String]):String = {
@@ -490,8 +510,8 @@ package object functions extends Serializable {
         val content = if (StringUtils.isNotEmpty(article.cleanedArticleText)) Some(article.cleanedArticleText.replaceAll("\\n+", "\n")) else None
         val keywords = if (StringUtils.isNotEmpty(article.metaKeywords)) article.metaKeywords.split(",").map(_.trim.toUpperCase) else Array.empty[String]
         
-        val desc =  if (StringUtils.isNotEmpty(article.metaDescription)) Some(article.metaDescription) else None
-        val title = if (StringUtils.isNotEmpty(article.title)) Some(article.title) else None
+        val desc =  Some(article.metaDescription).filter(StringUtils.isNotEmpty)
+        val title = Some(article.title).filter(StringUtils.isNotEmpty)
         
         val publishDate = if (article.publishDate != null) Some(new Date(article.publishDate.getTime)) else None
         

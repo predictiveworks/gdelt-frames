@@ -17,10 +17,9 @@ package de.kp.works.gdelt.enrich
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  * 
  */
+import de.kp.works.gdelt.functions._
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
-import de.kp.works.gdelt.functions._
-import de.kp.works.gdelt.GDELTModel
 
 class GraphEnricher extends BaseEnricher[GraphEnricher] {
 

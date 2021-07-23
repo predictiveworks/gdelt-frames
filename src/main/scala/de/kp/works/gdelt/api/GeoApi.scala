@@ -28,7 +28,7 @@ class GeoApi extends BaseApi[GeoApi] with GeoJson {
   
   def mentionsByDomain(domain:String):Seq[Mention] = {
         
-    val endpoint = s"${base}?query=domain:${domain}&format=GeoJSON"
+    val endpoint = s"$base?query=domain:$domain&format=GeoJSON"
     val geojson = getJson(endpoint).getAsJsonObject
     
     geoJsonToMentions(geojson)
@@ -37,7 +37,7 @@ class GeoApi extends BaseApi[GeoApi] with GeoJson {
   
   def mentionsByTerm(term:String):Seq[Mention] = {
         
-    val endpoint = s"${base}?query=${term}&format=GeoJSON"
+    val endpoint = s"$base?query=$term&format=GeoJSON"
     val geojson = getJson(endpoint).getAsJsonObject
     
     geoJsonToMentions(geojson)
@@ -52,7 +52,7 @@ class GeoApi extends BaseApi[GeoApi] with GeoJson {
    */
   def getMentionsHtml(term:String):Seq[Mention] = {
         
-    val endpoint = s"${base}?query=${term}"
+    val endpoint = s"$base?query=$term"
 
     val html = org.jsoup.Jsoup.connect(endpoint).get
     val geojson = extractGeoJson(html)

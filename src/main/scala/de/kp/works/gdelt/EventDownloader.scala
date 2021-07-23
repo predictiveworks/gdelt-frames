@@ -18,15 +18,11 @@ package de.kp.works.gdelt
  * 
  */
 
-import org.apache.spark.SparkFiles
-
-import org.apache.spark.sql._
-import org.apache.spark.sql.functions._
-
-
+import de.kp.works.gdelt.enrich.EventEnricher
 import de.kp.works.gdelt.functions._
 import de.kp.works.gdelt.model.EventV1
-import de.kp.works.gdelt.enrich.EventEnricher
+import org.apache.spark.sql._
+import org.apache.spark.sql.functions._
 
 /**
  * The base downloader of GDELT event files
@@ -41,14 +37,14 @@ class EventDownloader extends BaseDownloader[EventDownloader] {
     this
   }
 
-  def download:Unit = {
+  def download():Unit = {
     /*
      * The date is expected as YYYYMMDD
      */
-    val fname = s"${date}.export.CSV.zip"
+    val fname = s"$date.export.CSV.zip"
     
-    val endpoint = s"${base}/${fname}"
-    val fileName = s"${path}/event/${date}.export.csv"
+    val endpoint = s"$base/$fname"
+    val fileName = s"$path/event/$date.export.csv"
 
     downloadFile(endpoint, fileName)
    
@@ -56,8 +52,8 @@ class EventDownloader extends BaseDownloader[EventDownloader] {
   
   def transform:DataFrame = {
 
-    val inpath = s"${path}/event/${date}.export.csv"
-    val outfile = s"${path}/${date}.export.csv"
+    val inpath = s"$path/event/$date.export.csv"
+    val outfile = s"$path/$date.export.csv"
 
     transform(inpath, outfile)
     

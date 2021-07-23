@@ -19,7 +19,7 @@ package de.kp.works.gdelt.model
  */
 object EventV2 {
   
-  val columns = Array(
+  val columns: Array[(String, String, String)] = Array(
     ("_c0",  "EventId",      "Int"),
     ("_c1",  "Day",          "Int"),
     ("_c2",  "MonthYear",    "Int"),

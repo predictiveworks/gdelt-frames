@@ -22,7 +22,7 @@ object EventV1 {
   /*
    * http://data.gdeltproject.org/documentation/GDELT-Event_Codebook-V2.0.pdf
    */
-  val columns = Array(
+  val columns: Array[(String, String, String)] = Array(
     ("_c0",  "EventId",      "Int"),
     ("_c1",  "Day",          "Int"),
     ("_c2",  "MonthYear",    "Int"),
