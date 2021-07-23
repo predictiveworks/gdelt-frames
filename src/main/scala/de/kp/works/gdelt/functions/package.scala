@@ -25,6 +25,7 @@ import org.apache.commons.lang.StringUtils
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.functions._
 
+import de.kp.works.gdelt.h3.H3Utils
 import de.kp.works.gdelt.model._
 
 import scala.util.Try
@@ -156,7 +157,12 @@ package object functions extends Serializable {
       }    
     })
     
-  def locations_udf(countryCodes:Map[String,String]) =
+  /**
+   * This User Defined Function transforms each Geo Point
+   * into a H3 index of the provided resolution. This enables
+   * an easy grouping of events that refer to the same hexagon.
+   */
+  def locations_udf(resolution:Int, countryCodes:Map[String,String]) =
     udf((locations:String) => {
       
       if (locations != null) {
@@ -193,8 +199,21 @@ package object functions extends Serializable {
           val lat = if (blocks(4) == null) 0D else blocks(4).toDouble
           val lon = if (blocks(5) == null) 0D else blocks(5).toDouble
   
+          val coordinate = Seq(lat, lon)
+          val index = H3Utils.coordinateToH3(coordinate, resolution)
+          
           val featureId = if (blocks(6) == null) "*" else blocks(6)
-          Location(`type`, fullName, countryCode, countryName, adm1Code, adm2Code, Seq(lat, lon), featureId)
+          Location(
+              `type`, 
+              fullName, 
+              countryCode, 
+              countryName, 
+              adm1Code, 
+              adm2Code, 
+              coordinate, 
+              resolution, 
+              index, 
+              featureId)
           
         }).toSeq
         
@@ -204,7 +223,7 @@ package object functions extends Serializable {
 
     })
     
-  def enhanced_locations_udf(countryCodes:Map[String,String]) =
+  def enhanced_locations_udf(resolution:Int, countryCodes:Map[String,String]) =
     udf((enhancedLocations:String) => {
       
       if (enhancedLocations != null) {
@@ -243,8 +262,21 @@ package object functions extends Serializable {
           val lat = if (blocks(5) == null) 0D else blocks(5).toDouble
           val lon = if (blocks(6) == null) 0D else blocks(6).toDouble
   
+          val coordinate = Seq(lat, lon)
+          val index = H3Utils.coordinateToH3(coordinate, resolution)
+  
           val featureId = if (blocks(7) == null) "*" else blocks(7)
-          val location = Location(`type`, fullName, countryCode, countryName, adm1Code, adm2Code, Seq(lat, lon), featureId)
+          val location = Location(
+              `type`, 
+              fullName, 
+              countryCode, 
+              countryName, 
+              adm1Code, 
+              adm2Code, 
+              coordinate,
+              resolution,
+              index,
+              featureId)
           
           val offset = blocks(8).toInt
           EnhancedLocation(location, offset)
@@ -257,7 +289,7 @@ package object functions extends Serializable {
     
     })
     
-  def location_udf(countryCodes:Map[String,String], version:String="V1") =
+  def location_udf(resolution:Int, countryCodes:Map[String,String], version:String="V1") =
     udf((row:Row) => {
       
       val `type` = row.getAs[String](0).trim.toInt match {
@@ -289,9 +321,22 @@ package object functions extends Serializable {
         
         val lat = if (row.getAs[String](4) == null) 0D else row.getAs[String](4).toDouble
         val lon = if (row.getAs[String](5) == null) 0D else row.getAs[String](5).toDouble
+  
+        val coordinate = Seq(lat, lon)
+        val index = H3Utils.coordinateToH3(coordinate, resolution)
 
         val featureId = if (row.getAs[String](6) == null) "*" else row.getAs[String](6)
-        Location(`type`, fullName, countryCode, countryName, adm1Code, adm2Code, Seq(lat, lon), featureId)
+        Location(
+            `type`, 
+            fullName, 
+            countryCode, 
+            countryName, 
+            adm1Code, 
+            adm2Code, 
+            coordinate, 
+            resolution,
+            index,
+            featureId)
         
       }
       else {
@@ -310,9 +355,22 @@ package object functions extends Serializable {
         
         val lat = if (row.getAs[String](5) == null) 0D else row.getAs[String](5).toDouble
         val lon = if (row.getAs[String](6) == null) 0D else row.getAs[String](6).toDouble
+  
+        val coordinate = Seq(lat, lon)
+        val index = H3Utils.coordinateToH3(coordinate, resolution)
 
         val featureId = if (row.getAs[String](7) == null) "*" else row.getAs[String](7)
-        Location(`type`, fullName, countryCode, countryName, adm1Code, adm2Code, Seq(lat, lon), featureId)
+        Location(
+            `type`, 
+            fullName, 
+            countryCode, 
+            countryName, 
+            adm1Code, 
+            adm2Code, 
+            coordinate,
+            resolution,
+            index,
+            featureId)
         
       }
     })

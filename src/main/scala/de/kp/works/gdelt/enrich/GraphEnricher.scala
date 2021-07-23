@@ -22,17 +22,15 @@ import org.apache.spark.sql.functions._
 import de.kp.works.gdelt.functions._
 import de.kp.works.gdelt.GDELTModel
 
-class GraphEnricher {
-
-  private val countryCodes = GDELTModel.countryCodes
+class GraphEnricher extends BaseEnricher[GraphEnricher] {
 
   def transform(graph:DataFrame):DataFrame = {
     /*
      * Locations & enhanced locations
      */
     var enriched = graph
-      .withColumn("Locations", locations_udf(countryCodes)(col("Locations")))
-      .withColumn("EnhancedLocations", enhanced_locations_udf(countryCodes)(col("EnhancedLocations")))
+      .withColumn("Locations", locations_udf(resolution, countryCodes)(col("Locations")))
+      .withColumn("EnhancedLocations", enhanced_locations_udf(resolution, countryCodes)(col("EnhancedLocations")))
     /*
      * Organizations & enhanced organizations
      */

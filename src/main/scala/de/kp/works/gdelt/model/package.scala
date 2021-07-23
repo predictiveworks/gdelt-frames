@@ -163,6 +163,14 @@ package object model {
        */
       geoPoint:Seq[Double] = Seq.empty[Double],
       /*
+       * The H3 resolution used to compute the geospatial index
+       */
+      resolution:Int = 7,
+      /*
+       * The H3 index of the (lat, lon) coordinate
+       */
+      geoIndex:Long = Long.MaxValue,
+      /*
        * This is the GNS or GNIS FeatureID for this location. More information on these 
        * values can be found in Leetaru (2012).
        */

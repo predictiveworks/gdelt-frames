@@ -19,28 +19,10 @@ package de.kp.works.gdelt.enrich
  */
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
+
 import de.kp.works.gdelt.functions._
-import de.kp.works.gdelt.GDELTModel
 
-class EventEnricher {
-
-  private val cameoCountryCodes  = GDELTModel.cameoCountryCodes
-  private val countryCodes  = GDELTModel.countryCodes
-
-  private val eventCodes  = GDELTModel.eventCodes
-  private val ethnicCodes = GDELTModel.ethnicCodes
-  
-  private val groupCodes    = GDELTModel.groupCodes
-  private val religionCodes = GDELTModel.religionCodes
-
-  private val typeCodes  = GDELTModel.typeCodes
-
-  private var version:String = "V1"
-  
-  def setVersion(value:String):EventEnricher = {
-    version = value
-    this
-  }
+class EventEnricher extends BaseEnricher[EventEnricher] {
   
   def transform(dataset:DataFrame):DataFrame = {
     
@@ -119,7 +101,7 @@ class EventEnricher {
              
     val actorStruct = struct(actorCols.map(col): _*)    
     dataframe
-      .withColumn(s"Actor${num}Geo", location_udf(countryCodes)(actorStruct))
+      .withColumn(s"Actor${num}Geo", location_udf(resolution, countryCodes)(actorStruct))
       .drop(actorCols: _*)
    
   }
@@ -148,7 +130,7 @@ class EventEnricher {
              
     val actionStruct = struct(actionCols.map(col): _*)    
     dataframe
-      .withColumn("ActionGeo", location_udf(countryCodes)(actionStruct))
+      .withColumn("ActionGeo", location_udf(resolution, countryCodes)(actionStruct))
       .drop(actionCols: _*)
         
   }
