@@ -22,6 +22,11 @@
     in 2.11.12
     -->
     <scala.binary.version>2.11</scala.binary.version>
+    <!--
+    Google's Spark BigQuery connector requires version 2.4+
+    but there are a variety of incompatibilities with libraries
+    used by the connector.
+    -->
  	<spark.version>2.4.7</spark.version>
 
   </properties>
@@ -80,6 +85,11 @@
         <exclusion>
           <groupId>com.google.protobuf</groupId>
           <artifactId>protobuf-java</artifactId>
+        </exclusion>
+        <!-- Version 0.10.0 is not compliant with BigQuery -->
+        <exclusion>
+          <groupId>org.apache.arrow</groupId>
+          <artifactId>arrow-vector</artifactId>
         </exclusion>
       </exclusions>
 	</dependency>
