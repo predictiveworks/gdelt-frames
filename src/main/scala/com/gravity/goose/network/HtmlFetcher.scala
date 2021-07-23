@@ -17,38 +17,22 @@ package com.gravity.goose.network
  * limitations under the License.
  */
 
-import org.apache.http.HttpEntity
-import org.apache.http.HttpResponse
-import org.apache.http.HttpVersion
-import org.apache.http.client.CookieStore
-import org.apache.http.client.HttpClient
-import org.apache.http.client.methods.HttpGet
-import org.apache.http.client.params.CookiePolicy
-import org.apache.http.client.protocol.ClientContext
-import org.apache.http.conn.scheme.PlainSocketFactory
-import org.apache.http.conn.ssl.SSLSocketFactory
-import org.apache.http.conn.scheme.Scheme
-import org.apache.http.conn.scheme.SchemeRegistry
-import org.apache.http.cookie.Cookie
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager
-import org.apache.http.params.BasicHttpParams
-import org.apache.http.params.HttpConnectionParams
-import org.apache.http.params.HttpParams
-import org.apache.http.params.HttpProtocolParams
-import org.apache.http.protocol.BasicHttpContext
-import org.apache.http.protocol.HttpContext
-import org.apache.http.util.EntityUtils
-import java.io._
-import java.net.SocketException
-import java.net.SocketTimeoutException
-import java.net.URLConnection
-import java.util.ArrayList
-import java.util.Date
-import java.util.List
-import com.gravity.goose.utils.Logging
 import com.gravity.goose.Configuration
-import org.apache.http.impl.client.{DefaultHttpRequestRetryHandler, AbstractHttpClient, DefaultHttpClient}
+import com.gravity.goose.utils.Logging
+import org.apache.http.client.config.{CookieSpecs, RequestConfig}
+import org.apache.http.client.methods.{HttpUriRequest, RequestBuilder}
+import org.apache.http.client.{CookieStore, HttpClient}
+import org.apache.http.cookie.Cookie
+import org.apache.http.entity.ContentType
+import org.apache.http.impl.client.HttpClients
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager
+import org.apache.http.util.EntityUtils
+import org.apache.http.{HttpEntity, HttpHeaders, HttpResponse}
 
+import java.io._
+import java.net.{SocketException, SocketTimeoutException, URLConnection}
+import java.util
+import java.util.Date
 
 /**
  * User: Jim Plush
@@ -64,16 +48,16 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
    * holds a reference to our override cookie store, we don't want to store
    * cookies for head requests, only slows shit down
    */
-  var emptyCookieStore: CookieStore = null
+  var emptyCookieStore: Option[CookieStore] = None
   /**
    * holds the HttpClient object for making requests
    */
-  private var httpClient: HttpClient = null
-  initClient()
+  private var httpClient: Option[HttpClient] = None
+  init()
 
 
   def getHttpClient: HttpClient = {
-    httpClient
+    httpClient.get
   }
 
   /**
@@ -89,8 +73,10 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
    * @throws MaxBytesException()
    */
   def getHtml(config: Configuration, url: String): Option[String] = {
-    var httpget: HttpGet = null
+
+    var request:HttpUriRequest = null
     var htmlResult: String = null
+
     var entity: HttpEntity = null
     var instream: InputStream = null
 
@@ -102,17 +88,48 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
     }
 
     try {
-      val localContext: HttpContext = new BasicHttpContext
-      localContext.setAttribute(ClientContext.COOKIE_STORE, HtmlFetcher.emptyCookieStore)
-      httpget = new HttpGet(cleanUrl)
-      HttpProtocolParams.setUserAgent(httpClient.getParams, config.getBrowserUserAgent());
+      /*
+       * Connection & Socket timeouts
+       */
+      val httpConf = RequestConfig.custom()
+        .setCookieSpec(CookieSpecs.DEFAULT)
+        .setConnectTimeout(config.getConnectionTimeout)
+        .setSocketTimeout(config.getSocketTimeout)
+        .setConnectionRequestTimeout(120000)
+        .build
+      /*
+       * Connection Manager, Cookie Store and
+       * User Agent
+       *
+       * There is no need to define a schema registry as
+       * this is done as default by the connection manager
+       */
+      val pool = new PoolingHttpClientConnectionManager()
 
-      val params = httpClient.getParams
-      HttpConnectionParams.setConnectionTimeout(params, config.getConnectionTimeout())
-      HttpConnectionParams.setSoTimeout(params, config.getSocketTimeout())
+      pool.setMaxTotal(20000)
+      pool.setDefaultMaxPerRoute(500)
 
-      trace("Setting UserAgent To: " + HttpProtocolParams.getUserAgent(httpClient.getParams))
-      val response: HttpResponse = httpClient.execute(httpget, localContext)
+
+      httpClient = Option(HttpClients.custom()
+        .setConnectionManager(pool)
+        .setDefaultRequestConfig(httpConf)
+        .setDefaultCookieStore(HtmlFetcher.emptyCookieStore.get)
+        .setUserAgent(config.getBrowserUserAgent)
+        .build())
+
+      /** BUILD REQUEST */
+      request = RequestBuilder.get.setUri(cleanUrl)
+        .setHeader(HttpHeaders.ACCEPT,
+          "application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5")
+        .setHeader(HttpHeaders.ACCEPT_LANGUAGE,
+          "en-us")
+        .setHeader(HttpHeaders.CACHE_CONTROL,
+          "max-age=0")
+        .setHeader(HttpHeaders.USER_AGENT,
+          "Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.8) Gecko/20100723 Ubuntu/10.04 (lucid) Firefox/3.6.8")
+         .build
+
+      val response: HttpResponse = httpClient.get.execute(request)
 
       HttpStatusValidator.validate(cleanUrl, response.getStatusLine.getStatusCode) match {
         case Left(ex) => throw ex
@@ -124,18 +141,18 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
         instream = entity.getContent
         var encodingType: String = "UTF-8"
         try {
-          encodingType = EntityUtils.getContentCharSet(entity)
+
+          encodingType = ContentType.getOrDefault(entity).getCharset.toString
           if (encodingType == null) {
             encodingType = "UTF-8"
           }
         }
         catch {
-          case e: Exception => {
+          case e: Exception =>
             if (logger.isDebugEnabled) {
               trace("Unable to get charset for: " + cleanUrl)
               trace("Encoding Type is: " + encodingType)
             }
-          }
         }
         try {
           htmlResult = HtmlFetcher.convertStreamToString(instream, 15728640, encodingType).trim
@@ -149,27 +166,21 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
       }
     }
     catch {
-      case e: NullPointerException => {
+      case e: NullPointerException =>
         logger.warn(e.toString + " " + e.getMessage + " Caught for URL: " + cleanUrl)
-      }
-      case e: MaxBytesException => {
+      case e: MaxBytesException =>
         trace("GRVBIGFAIL: " + cleanUrl + " Reached max bytes size")
         throw e
-      }
-      case e: SocketException => {
+      case e: SocketException =>
         logger.warn(e.getMessage + " Caught for URL: " + cleanUrl)
-      }
-      case e: SocketTimeoutException => {
+      case e: SocketTimeoutException =>
         trace(e.toString)
-      }
-      case e: LoggableException => {
+      case e: LoggableException =>
         logger.warn(e.getMessage)
         return None
-      }
-      case e: Exception => {
+      case e: Exception =>
         trace("FAILURE FOR LINK: " + cleanUrl + " " + e.toString)
         return None
-      }
     }
     finally {
       if (instream != null) {
@@ -177,19 +188,17 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
           instream.close()
         }
         catch {
-          case e: Exception => {
+          case e: Exception =>
             logger.warn(e.getMessage + " Caught for URL: " + cleanUrl)
-          }
         }
       }
-      if (httpget != null) {
+      if (request != null) {
         try {
-          httpget.abort()
+          request.abort()
           entity = null
         }
         catch {
-          case e: Exception => {
-          }
+          case e: Exception =>
         }
       }
     }
@@ -208,11 +217,11 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
       is = new ByteArrayInputStream(htmlResult.getBytes("UTF-8"))
       mimeType = URLConnection.guessContentTypeFromStream(is)
       if (mimeType != null) {
-        if ((mimeType == "text/html") == true || (mimeType == "application/xml") == true) {
+        if ((mimeType == "text/html") || (mimeType == "application/xml")) {
           return Some(htmlResult)
         }
         else {
-          if (htmlResult.contains("<title>") == true && htmlResult.contains("<p>") == true) {
+          if (htmlResult.contains("<title>") && htmlResult.contains("<p>")) {
             return Some(htmlResult)
           }
           trace("GRVBIGFAIL: " + mimeType + " - " + cleanUrl)
@@ -224,31 +233,20 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
       }
     }
     catch {
-      case e: UnsupportedEncodingException => {
+      case e: UnsupportedEncodingException =>
         logger.warn(e.getMessage + " Caught for URL: " + cleanUrl)
-      }
-      case e: IOException => {
+      case e: IOException =>
         logger.warn(e.getMessage + " Caught for URL: " + cleanUrl)
-      }
     }
     None
   }
 
-  private def initClient() {
+  private def init() {
 
-    trace("Initializing HttpClient")
+    emptyCookieStore = Option(new CookieStore {
+      def addCookie(cookie: Cookie) {}
 
-    val httpParams: HttpParams = new BasicHttpParams
-    HttpConnectionParams.setConnectionTimeout(httpParams, 10 * 1000)
-    HttpConnectionParams.setSoTimeout(httpParams, 10 * 1000)
-    HttpProtocolParams.setVersion(httpParams, HttpVersion.HTTP_1_1)
-    emptyCookieStore = new CookieStore {
-      def addCookie(cookie: Cookie) {
-      }
-
-      def getCookies: List[Cookie] = {
-        emptyList
-      }
+      def getCookies: util.List[Cookie] = emptyList
 
       def clearExpired(date: Date): Boolean = {
         false
@@ -257,26 +255,9 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
       def clear() {
       }
 
-      private[network] var emptyList: ArrayList[Cookie] = new ArrayList[Cookie]
-    }
-    httpParams.setParameter("http.protocol.cookie-policy", CookiePolicy.BROWSER_COMPATIBILITY)
-    httpParams.setParameter("http.User-Agent", "Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.2.8) Gecko/20100723 Ubuntu/10.04 (lucid) Firefox/3.6.8")
-    httpParams.setParameter("http.language.Accept-Language", "en-us")
-    httpParams.setParameter("http.protocol.content-charset", "UTF-8")
-    httpParams.setParameter("Accept", "application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5")
-    httpParams.setParameter("Cache-Control", "max-age=0")
-    httpParams.setParameter("http.connection.stalecheck", false)
-    val schemeRegistry: SchemeRegistry = new SchemeRegistry
-    schemeRegistry.register(new Scheme("http", 80, PlainSocketFactory.getSocketFactory))
-    schemeRegistry.register(new Scheme("https", 443, SSLSocketFactory.getSocketFactory))
-    val cm = new ThreadSafeClientConnManager(schemeRegistry)
-    cm.setMaxTotal(20000)
-    cm.setDefaultMaxPerRoute(500)
-    httpClient = new DefaultHttpClient(cm, httpParams)
-    httpClient.asInstanceOf[AbstractHttpClient].setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler(0, false))
-    httpClient.getParams.setParameter("http.conn-manager.timeout", 120000L)
-    httpClient.getParams.setParameter("http.protocol.wait-for-continue", 10000L)
-    httpClient.getParams.setParameter("http.tcp.nodelay", true)
+      private var emptyList: util.ArrayList[Cookie] = new util.ArrayList[Cookie]
+    })
+
   }
 
   /**
@@ -307,25 +288,19 @@ object HtmlFetcher extends AbstractHtmlFetcher with Logging {
       return s.toString()
     }
     catch {
-      case e: SocketTimeoutException => {
+      case e: SocketTimeoutException =>
         logger.warn(e.toString + " " + e.getMessage)
-      }
-      case e: UnsupportedEncodingException => {
+      case e: UnsupportedEncodingException =>
         logger.warn(e.toString + " Encoding: " + encodingType)
-      }
-      case e: IOException => {
+      case e: IOException =>
         logger.warn(e.toString + " " + e.getMessage)
-      }
     }
     finally {
-      if (r != null) {
-        try {
-          r.close()
-        }
-        catch {
-          case e: Exception => {
-          }
-        }
+      if (r != null) try {
+        r.close()
+      }
+      catch {
+        case e: Exception =>
       }
     }
     null

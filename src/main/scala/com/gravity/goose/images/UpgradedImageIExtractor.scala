@@ -17,19 +17,15 @@ package com.gravity.goose.images
  * limitations under the License.
  */
 
-import java.io.File
-import java.net.{MalformedURLException, URL}
-import java.util
-import java.util.ArrayList
-import java.util.regex.{Matcher, Pattern}
-
 import com.gravity.goose.text.string
 import com.gravity.goose.{Article, Configuration}
-import org.apache.commons.io.FilenameUtils
 import org.apache.http.client.HttpClient
 import org.jsoup.nodes.{Document, Element}
 import org.jsoup.select.Elements
 
+import java.net.{MalformedURLException, URL}
+import java.util
+import java.util.regex.{Matcher, Pattern}
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
