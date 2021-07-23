@@ -56,6 +56,17 @@
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-mllib_${scala.binary.version}</artifactId>
       <version>${spark.version}</version>
+      <exclusions>
+        <!-- Version 2.5.0  is not compliant with BigQuery-->
+        <exclusion>
+          <groupId>com.google.protobuf</groupId>
+          <artifactId>protobuf-java</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>io.netty</groupId>
+          <artifactId>netty-all</artifactId>
+        </exclusion>
+      </exclusions>
 	</dependency>
 
 	<!-- APACHE SPARK SQL
@@ -64,6 +75,13 @@
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-sql_${scala.binary.version}</artifactId>
       <version>${spark.version}</version>
+      <exclusions>
+        <!-- Version 2.5.0  is not compliant with BigQuery-->
+        <exclusion>
+          <groupId>com.google.protobuf</groupId>
+          <artifactId>protobuf-java</artifactId>
+        </exclusion>
+      </exclusions>
 	</dependency>
     
     <!-- JSOUP HTML PARSER
@@ -93,6 +111,11 @@
 
     <!-- BIGQUERY CONNECTOR
     -->
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
+      <version>4.1.65.Final</version>
+    </dependency>
 
     <dependency>
       <groupId>com.google.cloud.spark</groupId>
