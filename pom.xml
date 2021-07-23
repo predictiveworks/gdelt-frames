@@ -17,7 +17,10 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <encoding>UTF-8</encoding>
-
+    <!--
+    The Scala version that has been used for testing
+    in 2.11.12
+    -->
     <scala.binary.version>2.11</scala.binary.version>
  	<spark.version>2.4.7</spark.version>
 
