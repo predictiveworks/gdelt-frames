@@ -46,7 +46,7 @@ class EventDownloader extends BaseDownloader[EventDownloader] {
     val endpoint = s"$base/$fname"
     val fileName = s"$path/event/$date.export.csv"
 
-    downloadFile(endpoint, fileName)
+    DownloadUtil.downloadFile(endpoint, fileName)
    
   }
   

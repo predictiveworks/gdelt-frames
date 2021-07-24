@@ -21,6 +21,7 @@ package de.kp.works.gdelt
 import de.kp.works.gdelt.enrich.{EventEnricher, GraphEnricher}
 import de.kp.works.gdelt.functions._
 import de.kp.works.gdelt.model.{EventV2, GraphV2, MentionV2}
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 
@@ -132,38 +133,97 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
   }
   
   /**
-   * This method the second stage of a GDELT ingestion
-   * pipe and leverages the `masterfiles` to download
-   * all referenced files. As a result, 3 different 
-   * folder are filled, each for events, graphs and
-   * mentions. 
+   * This method defines the second stage of a GDELT ingestion
+   * pipe and leverages the `masterfiles` to download all referenced
+   * files. As a result, 3 different  folder are filled, each for
+   * events, graphs and mentions.
    */
-  def downloadFiles():Unit = {
+
+  def downloadFiles(from:Long = -1L, to:Long = -1L):Unit = {
     
     val startts = System.currentTimeMillis
-    
     val masterfiles = session.read.parquet(s"$repository/masterfiles.parquet")
     
     val ts0 = System.currentTimeMillis
     if (verbose) println(s"Masterfiles loaded in ${ts0 - startts} ms.")
+
+    val timestamp_udf = udf((url:String) => {
+      /*
+       * Split the url by `/` and leverage last token,
+       * which describes the file name.
+       */
+      val fname = url.split("\\/").last
+      /*
+       * The split by `.` and use the first token,
+       * which is the datetime representation
+       */
+      val datetime = fname.split("\\.").head
+      /*
+       * The datetime is formatted as follows: [YYYY][MM][DD][HH][MM][SS]
+       */
+      val year = datetime.substring(0, 4).toInt
+      val month = datetime.substring(4, 6).toInt
+
+      val day = datetime.substring(6, 8).toInt
+      val hour = datetime.substring(8, 10).toInt
+
+      val minute = datetime.substring(10, 11).toInt
+      val second = datetime.substring(12, 14).toInt
+
+      val calendar = java.util.Calendar.getInstance
+
+      calendar.set(java.util.Calendar.YEAR, year)
+      calendar.set(java.util.Calendar.MONTH, month)
+
+      calendar.set(java.util.Calendar.DAY_OF_MONTH, day)
+      calendar.set(java.util.Calendar.HOUR_OF_DAY, hour)
+
+      calendar.set(java.util.Calendar.MINUTE, minute)
+      calendar.set(java.util.Calendar.SECOND, second)
+
+      calendar.getTimeInMillis
+
+    })
     /*
-     * STEP #1: Download event files from masterfiles
+     * STEP #1: Enhance materfiles dataset with timestamp
+     * and enable filtering with respect to a time interval
      */
-    download(masterfiles, "event")
+    val annotated = masterfiles.withColumn("timestamp", timestamp_udf(col("url")))
+
+    val filtered =
+      if (from == -1L && to == -1L)
+        annotated
+
+      else if (from == -1L)
+        annotated.filter(col("timestamp") <= to)
+
+      else if (to == -1L)
+        annotated.filter(col("timestamp") >= from)
+
+      else
+        annotated.filter(col("timestamp") >= from && col("timestamp") <= to)
+
+    /*
+     * STEP #2: Download filtered event files
+     * from masterfiles
+     */
+    download(filtered, "event")
 
     val ts1 = System.currentTimeMillis
     if (verbose) println(s"Event files downloaded in ${ts1 - ts0} ms.")
     /*
-     * STEP #2: Download graph files from masterfiles
+     * STEP #3: Download filtered graph files
+     * from masterfiles
      */
-    download(masterfiles, "graph")
+    download(filtered, "graph")
 
     val ts2 = System.currentTimeMillis
     if (verbose) println(s"Graph files downloaded in ${ts2 - ts1} ms.")
     /*
-     * STEP #2: Download mention files from masterfiles
+     * STEP #2: Download filtered mention files
+     * from masterfiles
      */
-    download(masterfiles, "mention")
+    download(filtered, "mention")
 
     val ts3 = System.currentTimeMillis
     if (verbose) println(s"Mention files downloaded in ${ts3 - ts2} ms.")
@@ -171,14 +231,30 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
   }
   
   private def download(masterfiles:DataFrame, category:String):Unit = {
-    
+    /*
+     * Check whether folder within repository exists
+     */
+    val fs = FileSystem.get(sc.hadoopConfiguration)
+    val exists = fs.exists(new Path(s"$repository/$category"))
+    if (!exists) {
+      if (verbose) println(s"Folder `$category` does not exist and will be created.")
+      fs.mkdirs(new Path(s"$repository/$category"))
+    }
+
     val files = masterfiles.filter(col("category") === category)
+    /*
+     * __MOD__
+     *
+     * In-method reference required; otherwise the
+     * task is not serializable
+     */
+    val path = repository
     files.select("url").repartition(100).foreach(row => {
       
        val endpoint = row.getAs[String](0)
-       val fileName = s"$repository/$category/${row.getAs[String](0).split("/").last}"
+       val fileName = s"$path/$category/${row.getAs[String](0).split("/").last}"
        
-       downloadFile(endpoint, fileName)
+       DownloadUtil.downloadFile(endpoint, fileName)
        
     })
   }
@@ -255,7 +331,7 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
       throw new Exception("No repository provided.")
     
     val fileName = s"$repository/masterfiles.csv"
-    downloadFile(uri, fileName)
+    DownloadUtil.downloadFile(uri, fileName)
     
   }
 }

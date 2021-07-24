@@ -31,7 +31,28 @@ import scala.sys.process._
 object DownloadUtil extends Serializable {
  
   val DELIMITER:String = "|"
- 
+  val timeout = 5000
+
+  def downloadFile(endpoint:String, fileName:String):Unit = {
+
+    val url = new URL(endpoint)
+    val conn = url.openConnection().asInstanceOf[HttpURLConnection]
+    /*
+     * Set connection parameters
+     */
+    conn.setConnectTimeout(timeout)
+    conn.setReadTimeout(timeout)
+
+    conn.connect()
+
+    if (conn.getResponseCode >= 400)
+      println("The download of the GDELT master file failed with: " + conn.getResponseMessage)
+
+    else
+      url #> new File(fileName) !!
+
+  }
+
 }
 
 trait BaseDownloader[T] {
@@ -42,8 +63,6 @@ trait BaseDownloader[T] {
   protected var date:String = ""
   protected var partitions:Int = sc.defaultMinPartitions
 
-  protected val timeout = 5000
-  
   protected val verbose = true
   
   def setDate(value:String):T = {
@@ -107,24 +126,4 @@ trait BaseDownloader[T] {
     
   }
 
-  protected def downloadFile(endpoint:String, fileName:String):Unit = {
-    
-    val url = new URL(endpoint)
-    val conn = url.openConnection().asInstanceOf[HttpURLConnection]
-    /*
-     * Set connection parameters
-     */
-    conn.setConnectTimeout(timeout)
-    conn.setReadTimeout(timeout)
-    
-    conn.connect()
-    
-    if (conn.getResponseCode >= 400)
-        println("The download of the GDELT master file failed with: " + conn.getResponseMessage)
-        
-    else
-        url #> new File(fileName) !!
-    
-  }
-  
 } 

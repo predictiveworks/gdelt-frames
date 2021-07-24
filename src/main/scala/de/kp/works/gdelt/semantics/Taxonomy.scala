@@ -21,6 +21,11 @@ package de.kp.works.gdelt.semantics
 
 case class Theme(term:String, count:Long)
 
+/**
+ * Theme categories describe events or conditions, except for four
+ * purely descriptive theme groups (actor [FNCACT], ethnicity, language
+ * and animal).
+ */
 class Taxonomy {
 
   def filterTax(themes:Seq[Theme], filter:String):Seq[String] = {
