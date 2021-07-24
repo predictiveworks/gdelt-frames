@@ -81,7 +81,11 @@ trait BaseDownloader[T] {
          * __MOD__ GDELT knowledge graph files leverage ';' and '#'
          * to specify list entries
          */
-        val text = line.replace("\r", "").replace("\t", DownloadUtil.DELIMITER)
+        val text = line
+          .replace("\r", "")
+          .replace("\n", "")
+          .replace("\t", DownloadUtil.DELIMITER)
+
         Row(text)
       })
     /*

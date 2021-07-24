@@ -25,6 +25,11 @@ object MentionV2 {
     ("_c1",  "EventTime",      "Int"),
     ("_c2",  "MentionTime",    "Int"),
     ("_c3",  "MentionType",    "Int"),
+    /*
+     * Suppose you are interested to join *.mentions.* files
+     * with *.gkg.* files, [SourceName] and [SourceIdent] refer
+     * to [SourceCommonName] and [DocumentIdentifier].
+     */
     ("_c4",  "SourceName",     "String"),
     ("_c5",  "SourceIdent",    "String"),
     ("_c6",  "SentenceId",     "Int"),

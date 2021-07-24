@@ -18,7 +18,7 @@ package de.kp.works.gdelt
  * 
  */
 
-import de.kp.works.gdelt.enrich.EventEnricher
+import de.kp.works.gdelt.enrich.{EventEnricher, GraphEnricher}
 import de.kp.works.gdelt.functions._
 import de.kp.works.gdelt.model.{EventV2, GraphV2, MentionV2}
 import org.apache.spark.sql._
@@ -54,8 +54,15 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
     EventV2.columns.foreach{ case(oldName:String, newName:String, _skip:String) => 
       input = input.withColumnRenamed(oldName, newName)
     }
-      
-    input = input.withColumn("EventId", event_id_udf(col("EventId")))
+    /*
+    * Remove all columns from the dataset that
+    * are unresolved
+    */
+    val dropCols = input.columns.filter(colname => colname.startsWith("_c"))
+
+    input = input
+      .withColumn("EventId", event_id_udf(col("EventId")))
+      .drop(dropCols: _*)
     /*
      * Semantic enrichment
      */
@@ -80,9 +87,18 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
     GraphV2.columns.foreach{ case(oldName:String, newName:String, _skip:String) => 
       input = input.withColumnRenamed(oldName, newName)
     }
-      
-    input
-      
+    /*
+    * Remove all columns from the dataset that
+    * are unresolved
+    */
+    val dropCols = input.columns.filter(colname => colname.startsWith("_c"))
+    input = input.drop(dropCols: _*)
+    /*
+     * Semantic enrichment
+     */
+    val enricher = new GraphEnricher()
+    enricher.transform(input)
+
   }  
   /**
    * This method loads all `mentions` into a single
@@ -101,8 +117,16 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
     MentionV2.columns.foreach{ case(oldName:String, newName:String, _skip:String) => 
       input = input.withColumnRenamed(oldName, newName)
     }
-      
-    input = input.withColumn("EventId", event_id_udf(col("EventId")))
+    /*
+     * Remove all columns from the dataset that
+     * are unresolved
+     */
+    val dropCols = input.columns.filter(colname => colname.startsWith("_c"))
+
+    input = input
+      .withColumn("EventId", event_id_udf(col("EventId")))
+      .drop(dropCols: _*)
+
     input
 
   }
