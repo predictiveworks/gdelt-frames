@@ -26,6 +26,19 @@ import org.apache.spark.ml.linalg.Vector
 import org.apache.spark.sql.functions._
 import org.graphframes.GraphFrame
 
+/**
+ * Graphframes is used to create a network of organisations
+ * sharing a common media coverage (co-occurrence).
+ *
+ * The assumption is that the more organisations are mentioned
+ * together in news articles, the stronger their link will be
+ * (edge weight).
+ *
+ * Although this assumption may also infer wrong connections
+ * because of random co-occurrence in news articles, this undirected
+ * weighted graph will help to find organisations’ importance relative
+ * to a set of pre-selected organisations.
+ */
 class ESGgraph extends ESGbase[ESGgraph] {
 
   private var edgeThreshold:Int = 200
@@ -75,7 +88,8 @@ class ESGgraph extends ESGbase[ESGgraph] {
       .cache()
     /*
      * STEP #2: Run personalised page rank with the landmarks
-     * provided and retrieve connections importance.
+     * provided and retrieve connections importance relative to
+     * the landmarks.
      */
     val rankGraph = denseGraph
       .parallelPersonalizedPageRank

@@ -30,6 +30,9 @@ import org.apache.spark.sql.{DataFrame, SaveMode}
  *
  * It is just the opposite, truly data-driven and derived
  * from how companies’ reputations are perceived in the media.
+ *
+ * ESG defines an 1:n relation between a GDELT organisation and
+ * GDELT themes.
  */
 class ESGscore extends ESGbase[ESGscore] {
 
