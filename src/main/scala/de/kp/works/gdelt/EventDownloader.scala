@@ -18,6 +18,7 @@ package de.kp.works.gdelt
  * 
  */
 
+import de.kp.works.core.FSHelper
 import de.kp.works.gdelt.enrich.EventEnricher
 import de.kp.works.gdelt.functions._
 import de.kp.works.gdelt.model.EventV1
@@ -30,10 +31,10 @@ import org.apache.spark.sql.functions._
 class EventDownloader extends BaseDownloader[EventDownloader] {
   
   private val base = "http://data.gdeltproject.org/events"
-  private var path:String = ""
+  private var repository:String = ""
 
   def setRepository(value:String):EventDownloader = {
-    path = value
+    repository = value
     this
   }
 
@@ -44,7 +45,13 @@ class EventDownloader extends BaseDownloader[EventDownloader] {
     val fname = s"$date.export.CSV.zip"
     
     val endpoint = s"$base/$fname"
-    val fileName = s"$path/event/$date.export.csv"
+    val fileName = s"$repository/event/days/$date.export.csv"
+    /*
+     * Check whether folders within repository exists
+     * and if not create
+     */
+    FSHelper.checkIfNotExistsCreate(sc, s"$repository/event")
+    FSHelper.checkIfNotExistsCreate(sc, s"$repository/event/days")
 
     DownloadUtil.downloadFile(endpoint, fileName)
    
@@ -52,8 +59,8 @@ class EventDownloader extends BaseDownloader[EventDownloader] {
   
   def transform:DataFrame = {
 
-    val inpath = s"$path/event/$date.export.csv"
-    val outfile = s"$path/$date.export.csv"
+    val inpath = s"$repository/event/$date.export.csv"
+    val outfile = s"$repository/$date.export.csv"
 
     transform(inpath, outfile)
     

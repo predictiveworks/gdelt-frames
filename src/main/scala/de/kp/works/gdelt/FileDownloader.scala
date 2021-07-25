@@ -18,10 +18,10 @@ package de.kp.works.gdelt
  * 
  */
 
+import de.kp.works.core.FSHelper
 import de.kp.works.gdelt.enrich.{EventEnricher, GraphEnricher}
 import de.kp.works.gdelt.functions._
 import de.kp.works.gdelt.model.{EventV2, GraphV2, MentionV2}
-import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql._
 import org.apache.spark.sql.functions._
 
@@ -78,7 +78,7 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
    */
   def prepareGraphs:DataFrame = {
     
-    val inpath = s"$repository/graph/*.gkg.CSV.zip"
+    val inpath = s"$repository/graph/*.gkg.csv.zip"
     val outfile = s"$repository/graphs.csv"
 
     var input = filesToDF(inpath, outfile)
@@ -233,13 +233,9 @@ class FileDownloader extends BaseDownloader[FileDownloader] {
   private def download(masterfiles:DataFrame, category:String):Unit = {
     /*
      * Check whether folder within repository exists
+     * and if not create
      */
-    val fs = FileSystem.get(sc.hadoopConfiguration)
-    val exists = fs.exists(new Path(s"$repository/$category"))
-    if (!exists) {
-      if (verbose) println(s"Folder `$category` does not exist and will be created.")
-      fs.mkdirs(new Path(s"$repository/$category"))
-    }
+    FSHelper.checkIfNotExistsCreate(sc, s"$repository/$category")
 
     val files = masterfiles.filter(col("category") === category)
     /*

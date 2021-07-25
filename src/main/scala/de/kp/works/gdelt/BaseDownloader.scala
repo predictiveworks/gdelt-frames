@@ -18,6 +18,7 @@ package de.kp.works.gdelt
  * 
  */
 import de.kp.works.spark.Session
+import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.SparkContext
 import org.apache.spark.input.PortableDataStream
 import org.apache.spark.sql._
@@ -125,5 +126,4 @@ trait BaseDownloader[T] {
       .csv(outfile)
     
   }
-
-} 
+}

@@ -160,6 +160,47 @@ class Taxonomy {
   }
 
   /**
+   * The result contains 22 topics:
+   *
+   * BIOFUEL
+   * CARBONCAPTURE
+   * CLIMATECHANGE
+   * COAL
+   * DEFORESTATION
+   * FISHERY
+   * FORESTRY
+   * GEOTHERMAL
+   * GREEN
+   * HYDRO
+   * METALS
+   * MINING
+   * NATURALGAS
+   * NUCLEARPOWER
+   * OIL
+   * OVERFISH
+   * POACHING
+   * SOLAR
+   * SPECIESENDANGERED
+   * SPECIESEXTINCT
+   * WATERWAYS
+   * WINDPOWER
+   */
+  def loadENVGroups(themes:Seq[Theme]):Seq[String] = {
+
+    themes
+      .filter(theme => theme.term.startsWith("ENV_"))
+      .map(theme => {
+        val term = theme.term.replace("ENV_", "")
+
+        val tokens = term.split("_")
+        term
+      })
+      .distinct
+      .sorted
+
+  }
+
+  /**
    * The result is a list of 58 topics:
    *
    * CATS_DEBT_CEILING_GOV_SHUTDOWN
@@ -290,6 +331,43 @@ class Taxonomy {
 
         val tokens = term.split("_")
         tokens(0)
+      })
+      .distinct
+      .sorted
+
+  }
+
+  /**
+   * UNGP (UN guiding principles on human rights)
+   *
+   * The result contains 16 topics:
+   *
+   * AFFORDABLE_NUTRITIOUS_FOOD
+   * CLEAN_WATER_SANITATION
+   * CLIMATE_CHANGE_ACTION
+   * CRIME_VIOLENCE
+   * EDUCATION
+   * FORESTS_RIVERS_OCEANS
+   * FREEDOM_FROM_DISCRIMINATION
+   * GENDER_EQUALITY
+   * HEALTHCARE
+   * JOB_OPPORTUNITIES_EMPLOYMENT
+   * JOB_OPPORTUNITIES_WORKING_CONDITIONS
+   * PHONE_INTERNET_ACCESS_COST
+   * PHONE_INTERNET_ACCESS_SLOW
+   * POLITICAL_FREEDOMS
+   * SUPPORT_FOR_PEOPLE_WHO_CANT_WORK
+   * TRANSPORTATION_ROADS
+   */
+  def loadUNGPGroups(themes:Seq[Theme]):Seq[String] = {
+
+    themes
+      .filter(theme => theme.term.startsWith("UNGP_"))
+      .map(theme => {
+        val term = theme.term.replace("UNGP_", "")
+
+        val tokens = term.split("_")
+        term
       })
       .distinct
       .sorted
