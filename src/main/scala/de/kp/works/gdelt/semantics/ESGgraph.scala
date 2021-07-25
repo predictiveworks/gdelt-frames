@@ -1,5 +1,6 @@
 package de.kp.works.gdelt.semantics
 
+import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.functions.{col, collect_list, explode, udf}
 
 /*
@@ -20,6 +21,8 @@ import org.apache.spark.sql.functions.{col, collect_list, explode, udf}
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  *
  */
+import org.apache.spark.ml.linalg.Vector
+
 import org.apache.spark.sql.functions._
 import org.graphframes.GraphFrame
 
@@ -27,16 +30,87 @@ class ESGgraph extends ESGbase[ESGgraph] {
 
   private var edgeThreshold:Int = 200
 
+  private var maxIter:Int = 100
+  private var resetProbability:Double = 0.15
+
   def setEdgeThreshold(value:Int):ESGgraph = {
     edgeThreshold = value
     this
   }
 
+  def setMaxIter(value:Int):ESGgraph = {
+    maxIter = value
+    this
+  }
+
+  def setResetProbability(value:Double):ESGgraph = {
+    resetProbability = value
+    this
+  }
+  /**
+   * The landmarks define a limited set of organisations,
+   * e.g., companies of an investor's portfolio
+   */
+  def analyzePaths(table:String, graph:GraphFrame, landmarks:Seq[String], depth:Int = 4):Unit = {
+    /*
+     * STEP #1: Computes shortest paths from each vertex to the
+     * given set of landmark vertices, where landmarks are specified
+     * by vertex ID. Note that this takes edge direction into account.
+     */
+    val shortestPaths = graph
+      .shortestPaths
+      .landmarks(landmarks)
+      .run()
+    /*
+     * Limit the graph to at most (depth) hops
+     * away from the landmarks
+     */
+    def filter_depth_udf(depth:Int) =
+      udf((distances: Map[String, Int]) => {
+        distances.values.exists(_ < depth + 1)
+      })
+
+    val denseGraph = GraphFrame(shortestPaths, graph.edges)
+      .filterVertices(filter_depth_udf(depth)(col("distances")))
+      .cache()
+    /*
+     * STEP #2: Run personalised page rank with the landmarks
+     * provided and retrieve connections importance.
+     */
+    val rankGraph = denseGraph
+      .parallelPersonalizedPageRank
+      .resetProbability(resetProbability)
+      .maxIter(maxIter)
+      .sourceIds(landmarks.asInstanceOf[Array[Any]])
+      .run()
+
+    /* Compute importance */
+    def importances_udf(landmarks:Seq[String]) =
+      udf((pageRank: Vector) => {
+        pageRank.toArray.zipWithIndex.map({ case (importance, id) =>
+          (landmarks(id), importance)
+        })
+      })
+
+    /* Extract list of connections and their relative importance */
+    val connections = rankGraph
+      .vertices
+      .withColumn("importances", importances_udf(landmarks)(col("pageranks")))
+      .withColumn("importance", explode(col("importances")))
+      .select(
+        col("id").as("connection"),
+        col("importance._1").as("organisation"),
+        col("importance._2").as("importance")
+      )
+
+    connections.write.mode(SaveMode.Overwrite).parquet(s"$repository/esg/$table.connections.parquet")
+
+  }
   /**
    * This method builds an ESG network and starts with
    * the `enriched` dataset from [ESGscore]
    */
-  def transform(table:String):GraphFrame = {
+  def buildGraph(table:String):GraphFrame = {
 
     val samples = session.read.parquet(s"$repository/esg/$table.enriched.parquet")
     /*
