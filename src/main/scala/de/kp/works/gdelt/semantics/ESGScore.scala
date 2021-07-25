@@ -45,7 +45,7 @@ class ESGScore {
     repository = value
     this
   }
-  /*
+  /**
    * STAGE: Restrict the graph dataset to those articles that
    * refer to the ESG dimensions. This method filters the `Themes`
    * column, explodes `Organisations` and finally selects and
@@ -53,7 +53,11 @@ class ESGScore {
    *
    * publishDate, url, themes, organisation, tone
    *
-   * The dataframe is saved to the repository as parquet file
+   * The dataframe is saved to the repository as parquet file.
+   *
+   * NOTE: We recommend to enrich the `organisation` with a list
+   * of alternative organisation names to make sure that GDELT
+   * and external naming of a certain organisation with match
    */
   def extract(graph:DataFrame, file:String):Unit = {
 
@@ -121,6 +125,32 @@ class ESGScore {
      */
     FSHelper.checkIfNotExistsCreate(sc, s"$repository/esg")
     samples.write.mode(SaveMode.Overwrite).parquet(s"$repository/esg/$file")
+
+  }
+
+  /**
+   * STAGE: Enrich the organisation name with a list of
+   * alternate names to support join operations with other
+   * datasets.
+   */
+  def transform(file:String, mapping:Map[String, Seq[String]]):Unit = {
+
+    val path = s"$repository/esg/$file"
+    def enrich_organisation_udf(mapping:Map[String, Seq[String]]) =
+      udf((organisation:String) => {
+        if (mapping.contains(organisation)) {
+          Seq(organisation) ++ mapping(organisation)
+        }
+        else
+          Seq(organisation)
+      })
+
+    val enrich_organisation = enrich_organisation_udf(mapping)(col("organisation"))
+
+    val samples = session.read.parquet(path)
+
+    samples.withColumn("organisation", explode(enrich_organisation))
+    samples.write.mode(SaveMode.Overwrite).parquet(path)
 
   }
 }
