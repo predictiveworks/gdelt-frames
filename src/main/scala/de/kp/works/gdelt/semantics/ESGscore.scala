@@ -19,31 +19,20 @@ package de.kp.works.gdelt.semantics
  */
 
 import de.kp.works.core.FSHelper
-import de.kp.works.spark.Session
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, SaveMode}
+/**
+ * This class is responsible for creating a data-driven
+ * ESG (Environmental, Social & Governance) score.
+ *
+ * This score is not subjective and based on assumptions
+ * derived from companies’ official disclosures.
+ *
+ * It is just the opposite, truly data-driven and derived
+ * from how companies’ reputations are perceived in the media.
+ */
+class ESGscore extends ESGbase[ESGscore] {
 
-class ESGScore {
-  /**
-   * This class is responsible for creating a data-driven
-   * ESG (Environmental, Social & Governance) score.
-   *
-   * This score is not subjective and based on assumptions
-   * derived from companies’ official disclosures.
-   *
-   * It is just the opposite, truly data-driven and derived
-   * from how companies’ reputations are perceived in the media.
-   */
-
-  private val session = Session.getSession
-  private val sc = session.sparkContext
-
-  private var repository:String = ""
-
-  def setRepository(value:String):ESGScore = {
-    repository = value
-    this
-  }
   /**
    * STAGE #1: Restrict the graph dataset to those articles that
    * refer to the ESG dimensions. This method filters the `Themes`
@@ -58,7 +47,7 @@ class ESGScore {
    * of alternative organisation names to make sure that GDELT
    * and external naming of a certain organisation with match
    */
-  def extract(graph:DataFrame, file:String):Unit = {
+  def extract(graph:DataFrame, table:String):Unit = {
 
     if (repository.isEmpty)
       throw new Exception(s"No path provided for the data repository")
@@ -123,7 +112,7 @@ class ESGScore {
      * Persist samples as parquet file
      */
     FSHelper.checkIfNotExistsCreate(sc, s"$repository/esg")
-    samples.write.mode(SaveMode.Overwrite).parquet(s"$repository/esg/$file")
+    samples.write.mode(SaveMode.Overwrite).parquet(s"$repository/esg/$table.extracted.parquet")
 
   }
 
@@ -137,9 +126,8 @@ class ESGScore {
    * needed is a time series of scores for each organisation
    * and dimension.
    */
-  def enrich(file:String, mapping:Map[String, Seq[String]]):Unit = {
+  def enrich(table:String, mapping:Map[String, Seq[String]]):Unit = {
 
-    val path = s"$repository/esg/$file"
     def enrich_organisation_udf(mapping:Map[String, Seq[String]]) =
       udf((organisation:String) => {
         if (mapping.contains(organisation)) {
@@ -151,25 +139,24 @@ class ESGScore {
 
     val enrich_organisation = enrich_organisation_udf(mapping)(col("organisation"))
 
-    val samples = session.read.parquet(path)
+    val samples = session.read.parquet(s"$repository/esg/$table.extracted.parquet")
 
     samples.withColumn("organisation", explode(enrich_organisation))
-    samples.write.mode(SaveMode.Overwrite).parquet(path)
+    samples.write.mode(SaveMode.Overwrite).parquet(s"$repository/esg/$table.enriched.parquet")
 
   }
 
   /**
    * STAGE #3
    */
-  def aggregate(file:String):Unit = {
+  def aggregate(table:String):Unit = {
     /*
      * Explode `themes` and aggregate by `publishDate`, `organisation`
      * and `theme`
      */
     val groupCols = List("publishDate", "organisation", "theme").map(col)
 
-    val path = s"$repository/esg/$file"
-    val samples = session.read.parquet(path)
+    val samples = session.read.parquet(s"$repository/esg/$table.enriched.parquet")
       .withColumn("theme", explode(col("themes")))
       .drop("themes")
       .groupBy(groupCols: _*)
@@ -181,14 +168,14 @@ class ESGScore {
      * number of mentions. This prepares for computing our own
      * ESG score
      */
-    samples.write.mode(SaveMode.Overwrite).parquet(path)
+    samples.write.mode(SaveMode.Overwrite).parquet(s"$repository/esg/$table.aggregated.parquet")
 
   }
 
   /**
    * STAGE #4
    */
-  def score(file:String):Unit = {
+  def score(table:String):Unit = {
     /*
      * A more or less straightforward approach for scoring
      * is used, which looks at the difference between an
@@ -201,8 +188,7 @@ class ESGScore {
      * normalizing across industries, a score for each ESG dimension
      * is computed.
      */
-    val path = s"$repository/esg/$file"
-    val samples = session.read.parquet(path)
+    val samples = session.read.parquet(s"$repository/esg/$table.enriched.parquet")
 
     /*
      * STEP #1: Compute the industry average (sum) with respect
@@ -223,8 +209,13 @@ class ESGScore {
        * tone and an organisation's tone for each ESG dimension
        */
       .withColumn("diff_tone", col("tone") - col("ref_tone"))
+      /*
+       * We also build a confidence value between the industry
+       * mentions and an organisation's mention in new articles
+       */
+      .withColumn("confidence", col("total") / col("ref_total"))
 
-    result.write.mode(SaveMode.Overwrite).parquet(path)
+    result.write.mode(SaveMode.Overwrite).parquet(s"$repository/esg/$table.scored.parquet")
 
   }
 }
