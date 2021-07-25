@@ -1,9 +1,4 @@
 package de.kp.works.gdelt.semantics
-
-import de.kp.works.core.FSHelper
-import org.apache.spark.sql.{DataFrame, SaveMode, functions}
-import org.apache.spark.sql.functions._
-
 /*
  * Copyright (c) 20129 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
  *
@@ -22,7 +17,11 @@ import org.apache.spark.sql.functions._
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  *
  */
+
+import de.kp.works.core.FSHelper
 import de.kp.works.spark.Session
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.{DataFrame, SaveMode}
 
 class ESGScore {
   /**
@@ -46,7 +45,7 @@ class ESGScore {
     this
   }
   /**
-   * STAGE: Restrict the graph dataset to those articles that
+   * STAGE #1: Restrict the graph dataset to those articles that
    * refer to the ESG dimensions. This method filters the `Themes`
    * column, explodes `Organisations` and finally selects and
    * renames:
@@ -129,11 +128,16 @@ class ESGScore {
   }
 
   /**
-   * STAGE: Enrich the organisation name with a list of
+   * STAGE #2: Enrich the organisation name with a list of
    * alternate names to support join operations with other
    * datasets.
+   *
+   * At the end of this stage, each organisation has assigned
+   * a list of themes (or ESG dimensions). What is finally
+   * needed is a time series of scores for each organisation
+   * and dimension.
    */
-  def transform(file:String, mapping:Map[String, Seq[String]]):Unit = {
+  def enrich(file:String, mapping:Map[String, Seq[String]]):Unit = {
 
     val path = s"$repository/esg/$file"
     def enrich_organisation_udf(mapping:Map[String, Seq[String]]) =
@@ -151,6 +155,76 @@ class ESGScore {
 
     samples.withColumn("organisation", explode(enrich_organisation))
     samples.write.mode(SaveMode.Overwrite).parquet(path)
+
+  }
+
+  /**
+   * STAGE #3
+   */
+  def aggregate(file:String):Unit = {
+    /*
+     * Explode `themes` and aggregate by `publishDate`, `organisation`
+     * and `theme`
+     */
+    val groupCols = List("publishDate", "organisation", "theme").map(col)
+
+    val path = s"$repository/esg/$file"
+    val samples = session.read.parquet(path)
+      .withColumn("theme", explode(col("themes")))
+      .drop("themes")
+      .groupBy(groupCols: _*)
+      .agg(count("*").as("total"), sum(col("tone")).as("tone"))
+      .withColumnRenamed("publishDate", "date")
+    /*
+     * The result is a dataset that specifies an organization with
+     * the date, theme (ESG dimension), summed tone and the total
+     * number of mentions. This prepares for computing our own
+     * ESG score
+     */
+    samples.write.mode(SaveMode.Overwrite).parquet(path)
+
+  }
+
+  /**
+   * STAGE #4
+   */
+  def score(file:String):Unit = {
+    /*
+     * A more or less straightforward approach for scoring
+     * is used, which looks at the difference between an
+     * organisation's tone and its industry average.
+     *
+     * How much more "positive" or "negative" a company is
+     * perceived across all financial services news articles.
+     *
+     * By looking at the average of that difference over day, and
+     * normalizing across industries, a score for each ESG dimension
+     * is computed.
+     */
+    val path = s"$repository/esg/$file"
+    val samples = session.read.parquet(path)
+
+    /*
+     * STEP #1: Compute the industry average (sum) with respect
+     * to each ESG dimension
+     */
+    val baseline = samples.groupBy("date", "theme")
+      .agg(
+        sum(col("tone")).as("ref_tone"),
+        sum(col("total")).as("ref_total"))
+
+    /*
+     * STEP #2: Join the samples dataset with the baseline
+     */
+    val result = samples
+      .join(baseline, usingColumns = Seq("date", "theme"))
+      /*
+       * Next we build the difference between the industry
+       * tone and an organisation's tone for each ESG dimension
+       */
+      .withColumn("diff_tone", col("tone") - col("ref_tone"))
+
+    result.write.mode(SaveMode.Overwrite).parquet(path)
 
   }
 }
