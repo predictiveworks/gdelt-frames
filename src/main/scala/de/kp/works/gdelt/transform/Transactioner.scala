@@ -1,9 +1,4 @@
 package de.kp.works.gdelt.transform
-
-import de.kp.works.gdelt.model.Location
-import org.apache.spark.sql.{DataFrame, Row}
-import org.apache.spark.sql.functions.{col, struct, udf}
-
 /*
  * Copyright (c) 20129 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
  *
@@ -23,14 +18,18 @@ import org.apache.spark.sql.functions.{col, struct, udf}
  *
  */
 
+import de.kp.works.gdelt.model.Location
+import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.functions.{col, struct, udf}
+
 class Transactioner extends BaseTransform[Transactioner] {
+
+  private val columns = List("Locations", "Organisations", "Persons", "Themes")
   /**
    * This method transforms a set of columns of the GDELT
    * graph dataset (*.gkg.*) into a transaction column to
    * enable frequent item and association rule mining.
    */
-  private val columns = List("Locations", "Organisations", "Persons", "Themes")
-
   def transform(graph:DataFrame):DataFrame = {
     /*
      * STEP #1: Preprocessing
@@ -130,7 +129,10 @@ class Transactioner extends BaseTransform[Transactioner] {
 
       s"$recordId|$publishDate|$documentId"
     })
-
+    /*
+     * The result is a 2 column dataset that is prepared
+     * to be used with Apache Spark's FPGrowth
+     */
     samples
       .withColumn("taid", identStruct)
       .select("taid", "transaction")
