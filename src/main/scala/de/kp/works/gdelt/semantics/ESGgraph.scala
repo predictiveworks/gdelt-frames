@@ -1,8 +1,4 @@
 package de.kp.works.gdelt.semantics
-
-import org.apache.spark.sql.SaveMode
-import org.apache.spark.sql.functions.{col, collect_list, explode, udf}
-
 /*
  * Copyright (c) 20129 - 2021 Dr. Krusche & Partner PartG. All rights reserved.
  *
@@ -21,6 +17,10 @@ import org.apache.spark.sql.functions.{col, collect_list, explode, udf}
  * @author Stefan Krusche, Dr. Krusche & Partner PartG
  *
  */
+
+import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.functions.{col, collect_list, explode, udf}
+
 import org.apache.spark.ml.linalg.Vector
 
 import org.apache.spark.sql.functions._

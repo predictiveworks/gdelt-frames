@@ -20,3 +20,4 @@ Some of the most well-known use cases of the GDELT datasets include:
 * Risk Assessment
 * Sentiment Analysis
 * Social Science Research
+
